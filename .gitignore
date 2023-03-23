@@ -1,1 +1,2 @@
-sPLash-venv
+**/venv
+**/__pycache__

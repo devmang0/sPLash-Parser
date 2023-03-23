@@ -1,0 +1,45 @@
+start: value*
+
+
+// statement:
+
+// expression: statement 
+//           | value
+
+// block: "{" statement "}"
+
+
+// definition:
+
+
+// string : STRING
+
+value: INT
+//      | 
+
+
+
+
+
+
+
+// Special declarations of terminals not in common.lark
+
+INT: /((_*)?\d+)+/
+
+
+
+
+//  MISC
+
+COMMENT: "(*" /.*?/ "*)" // Match any comments also multiline
+
+%import common.ESCAPED_STRING -> STRING
+%import common.DIGIT
+
+%import common.WS
+%ignore WS
+%ignore COMMENT
+%import common.WS_INLINE
+%ignore WS_INLINE
+
