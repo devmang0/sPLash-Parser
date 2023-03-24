@@ -1,39 +1,15 @@
-#
-# This example shows how to write a basic calculator with variables.
-#
-
+import sys
+import os
 from lark import Lark, Transformer, v_args
 
-
-try:
-    input = raw_input   # For Python2 compatibility
-except NameError:
-    pass
-
 with open("grammars/sPLash.lark") as _grammar:
-    
     grammar = _grammar.read()
-
-
-# @v_args(inline=True)    # Affects the signatures of the methods
-# class CalculateTree(Transformer):
-#     from operator import add, sub, mul, truediv as div, neg
-#     number = float
-
-#     def __init__(self):
-#         self.vars = {}
-
-#     def assign_var(self, name, value):
-#         self.vars[name] = value
-#         return value
-
-#     def var(self, name):
-#         return self.vars[name]
 
 
 comments = []
 
-_parser = Lark(grammar, parser='lalr', start='start',lexer_callbacks={"COMMENT": comments.append})
+_parser = Lark(grammar, parser='lalr', start='start',
+               lexer_callbacks={"COMMENT": comments.append})
 parse = _parser.parse
 
 
@@ -46,16 +22,39 @@ def main():
         print(parse(s))
 
 
-def test():
-    print(parse("""
-        (*Comentário muita longo*)\n
-        123_1234_124\n
-        _1234
-                 """).pretty())
+
+def test(to_parse: str):
+
+    prsd = parse(to_parse)
+
+    print(prsd)
+    print(prsd.pretty())
     print(comments)
     # print(parse("1+a*-3"))
 
+def run_tests(args):
+
+    
+    if len(args) == 1:
+        tests = ["default_example.splash"]
+    else: 
+        tests = [ x for x in os.listdir("./tests") if x.split(".")[0] in args[1:] ]
+
+    for t in tests:
+
+        print("\n Now testing: ", t)
+        with open("./tests/"+t) as f:
+            test(f.read())
+        
+
+
+
+        
+        
+
+
 
 if __name__ == '__main__':
-    test()
+    run_tests(sys.argv)
+    # test()
     # main()

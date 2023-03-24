@@ -10,13 +10,12 @@ The goal is to implement a parser that takes sPLash programs and prints the AST 
 
 As part of this task, you must also build a set of diverse programs written in `sPLash` both grammatically correct and incorrect to validate your parser.
 
-In this first part of the project we're going to be constructing a grammar parser for the `sPLash` language.
-
+----
 ### Language Description
 
 - Comments in simPLe (meant sPLash?) start with `(*` and end with `*)`.
 - sPLash is white space insensitive.
-- A program is made of several declararions or definitions that precede the main body.
+- A program is made of several declarations or definitions that precede the main body.
 - A declaration includes the name of the function, it's arguments, types and refinments, as well as the return type.
 
 ```sPLash
@@ -63,3 +62,4 @@ pi:Int = 3; (* Engineers, am i right *)
 ### Questions
 
 1. Integer can start with underscores? (_1000_1223_4456)
+2. Can `-` be used as a unary operator as in `return -a` see this [![test]](/tests/abs_test.splash)

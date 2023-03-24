@@ -1,45 +1,75 @@
-start: value*
+start: program
+program: statement*
+
+statement: declaration
+     //     | definition
+         | ifthenelse
+         | while
+         | return
 
 
-// statement:
 
-// expression: statement 
-//           | value
+declaration: binder"(" (binder ["," binder]* )? ")" (";"|block) -> funcdec
+           | binder "=" value ";" -> vardec
 
-// block: "{" statement "}"
+condition: value binop value
+
+ifthenelse: "if" condition block ["else" block]
+while: "while" block 
+
+return: "return" [value]
+
+refinement: "where" condition
 
 
-// definition:
+block: "{" statement* "}"
 
-
-// string : STRING
 
 value: INT
-//      | 
+     | FLOAT
+     | "true" -> true
+     | "false" -> false
+     | NAME -> var
 
 
+binop: OP
 
-
-
+binder: NAME":"TYPE [refinement]
 
 
 // Special declarations of terminals not in common.lark
+OP: "&&" | "||" | "==" | "!=" | ">=" | ">" | "<" | "<=" 
+  |  "+" | "-"  | "*"  | "/"  | "%"
+
+UNOP: "!"
 
 INT: /((_*)?\d+)+/
+FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
+
+TYPE: "Int" | "Float" | "Double" | "Bool" |  "String"
+
+// BOOL: "true" 
+//     | "false"
 
 
-
+// NAME (alias for common.CNAME) describes our variable format  
+INDEX_ACCESS: NAME"["INT"]" 
 
 //  MISC
-
-COMMENT: "(*" /.*?/ "*)" // Match any comments also multiline
-
-%import common.ESCAPED_STRING -> STRING
-%import common.DIGIT
+COMMENT: "(*" /(.|\n)*?/ "*)" // Match any comments multiline
 
 %import common.WS
 %ignore WS
-%ignore COMMENT
 %import common.WS_INLINE
 %ignore WS_INLINE
+
+%ignore COMMENT
+
+%import common.CNAME -> NAME
+%import common.ESCAPED_STRING -> STRING
+%import common.DIGIT
+
+
+
+
 
