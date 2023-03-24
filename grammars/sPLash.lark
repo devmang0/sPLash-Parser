@@ -2,22 +2,45 @@ start: program
 program: statement*
 
 statement: declaration
-     //     | definition
+         | definition
          | ifthenelse
          | while
          | return
 
 
+expression: neg
+          
+neg: sum  
+   | "-" sum -> neg
+          
+sum: prod
+   | sum "+" prod -> add
+   | sum "-" prod -> sub
 
-declaration: binder"(" (binder ["," binder]* )? ")" (";"|block) -> funcdec
-           | binder "=" value ";" -> vardec
+prod: atom
+    | prod "*" atom -> mul
+    | prod "/" atom -> div
+    | prod "%" atom -> mod
 
-condition: value binop value
+
+declaration: binder"(" (binder ["," binder]* )? ");" -> funcdec
+           | binder";" -> vardec
+
+definition:  binder"(" (binder ["," binder]* )? ")" block -> funcdef
+          |  binder "=" expression ";" -> vardef 
+
+comparison: expression COMPOP expression
+
+condition: comparison
+         | var
+         | comparison LOGOP condition
+
+
 
 ifthenelse: "if" condition block ["else" block]
 while: "while" block 
 
-return: "return" [value]
+return: "return" [expression] ";"
 
 refinement: "where" condition
 
@@ -25,21 +48,23 @@ refinement: "where" condition
 block: "{" statement* "}"
 
 
-value: INT
+?atom: INT
      | FLOAT
      | "true" -> true
      | "false" -> false
-     | NAME -> var
+     | var
+     | STRING
+     // | "("expression")" Parenthesized expression are part of this language?
 
 
-binop: OP
-
+var: NAME
 binder: NAME":"TYPE [refinement]
 
 
 // Special declarations of terminals not in common.lark
-OP: "&&" | "||" | "==" | "!=" | ">=" | ">" | "<" | "<=" 
-  |  "+" | "-"  | "*"  | "/"  | "%"
+COMPOP: "==" | "!=" | ">=" | ">" | "<" | "<="
+LOGOP:  "&&" | "||"  
+AROP:   "+" | "-"  | "*"  | "/"  | "%"
 
 UNOP: "!"
 
@@ -48,8 +73,8 @@ FLOAT: DIGIT+ | DIGIT*"."DIGIT+
 
 TYPE: "Int" | "Float" | "Double" | "Bool" |  "String"
 
-// BOOL: "true" 
-//     | "false"
+BOOL: "true" 
+    | "false"
 
 
 // NAME (alias for common.CNAME) describes our variable format  
