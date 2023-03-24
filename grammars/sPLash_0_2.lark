@@ -26,10 +26,10 @@ statement: declaration
        | "-" factor -> neg
 
 
-?declaration: binder"(" (binder ["," binder]* )? ");" -> funcdec
+?declaration: binder func_args ";" -> funcdec
             | binder";" -> vardec
 
-?definition:  binder"(" (binder ["," binder]* )? ")" block -> funcdef
+?definition:  binder func_args block -> funcdef
            |  binder "=" expression ";" -> vardef 
 
 comparison: expression CMP_OP expression
@@ -47,6 +47,7 @@ return: "return" [expression] ";"
 
 refinement: "where" condition
 
+func_args: "("(binder ["," binder]* )?")"
 
 block: "{" statement* "}"
 

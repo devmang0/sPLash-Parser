@@ -2,7 +2,7 @@ import sys
 import os
 from lark import Lark, Transformer, v_args
 
-with open("grammars/sPLash.lark") as _grammar:
+with open("grammars/sPLash_0_2.lark") as _grammar:
     grammar = _grammar.read()
 
 
