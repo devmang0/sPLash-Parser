@@ -5,5 +5,3 @@ abs:Int where abs >= 0 ( a:Int ){
     }
     return a;
 }
-
-pi:Double = 3.14;
