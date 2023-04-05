@@ -9,6 +9,7 @@ statement: declaration
 
 
 ?expression: neg
+           | NAME"("binder")"
           
 ?neg: sum  
           
@@ -32,7 +33,7 @@ statement: declaration
 ?definition:  binder"(" (binder ["," binder]* )? ")" block -> funcdef
            |  binder "=" expression ";" -> vardef 
 
-comparison: expression CMP_OP expression
+?comparison: expression CMP_OP expression
 
 ?condition: comparison
          | var
@@ -51,7 +52,7 @@ refinement: "where" condition
 block: "{" statement* "}"
 
 var: NAME
-binder: NAME":"TYPE refinement?
+binder: NAME":"type refinement?
 
 ?atom: INT
      | FLOAT
@@ -74,6 +75,9 @@ UNOP: "!" | "-"
 
 INT: /((_*)?\d+)+/
 FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
+
+
+
 
 TYPE: "Int" | "Float" | "Double" | "Bool" |  "String"
 

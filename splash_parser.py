@@ -34,15 +34,16 @@ def test(to_parse: str):
 
 def run_tests(args):
 
-    
+    tests = []
+
     if len(args) == 1:
-        tests = ["default_example.splash"]
-    else: 
-        tests = [ x for x in os.listdir("./tests") if x.split(".")[0] in args[1:] ]
+        tests = ["positive/default_example.splash"]
+    else:
+        tests = args[1:]
 
     for t in tests:
-
-        print("\n Now testing: ", t)
+        
+        print("testing: ", t)
         with open("./tests/"+t) as f:
             test(f.read())
         
