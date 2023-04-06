@@ -1,5 +1,5 @@
 start: program
-program: statement* main
+program: statement*
 
 statement: declaration
          | definition
@@ -9,9 +9,9 @@ statement: declaration
 
 
 ?expression: neg
-           | func_call
+           | NAME"("binder")"
           
-?neg: sum
+?neg: sum  
           
 ?sum: prod
     | sum "+" prod -> add
@@ -27,29 +27,27 @@ statement: declaration
        | "-" factor -> neg
 
 
-?declaration: binder func_args ";" -> funcdec
+?declaration: binder"(" (binder ["," binder]* )? ");" -> funcdec
             | binder";" -> vardec
 
-?definition:  binder func_args block -> funcdef
-           |  [binder|var] "=" expression ";" -> vardef 
+?definition:  binder"(" (binder ["," binder]* )? ")" block -> funcdef
+           |  binder "=" expression ";" -> vardef 
 
-comparison: expression CMP_OP expression
+?comparison: expression CMP_OP expression
 
 ?condition: comparison
          | var
          | comparison LOG_OP condition
 
-func_call: NAME"("(atom ["," atom ]*)?")"
 
 
 ifthenelse: "if" condition block ["else" block]
-while: "while" condition block 
+while: "while" block 
 
 return: "return" [expression] ";"
 
 refinement: "where" condition
 
-func_args: "("(binder ["," binder]* )?")"
 
 block: "{" statement* "}"
 
@@ -62,13 +60,8 @@ binder: NAME":"type refinement?
      | FALSE
      | var
      | STRING
-     | NAME "["atom"]"
      // | "("expression")" Parenthesized expression are part of this language?
 
-?type: TYPE
-     | "["TYPE"]" -> arrayof
-
-main: "main:Int("")"
 
 
 // Special declarations of terminals not in common.lark
@@ -83,14 +76,17 @@ UNOP: "!" | "-"
 INT: /((_*)?\d+)+/
 FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
 
-TYPE: "Int" | "Float" | "Double" | "Bool" | "String" | "Void"
+
+
+
+TYPE: "Int" | "Float" | "Double" | "Bool" |  "String"
 
 TRUE: "true" 
 FALSE: "false"
 
 
 // NAME (alias for common.CNAME) describes our variable format  
-// INDEX_ACCESS: NAME"["INT"]" 
+INDEX_ACCESS: NAME"["INT"]" 
 
 //  MISC
 COMMENT: "(*" /(.|\n)*?/ "*)" // Match any comments multiline

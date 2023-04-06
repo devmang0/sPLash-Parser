@@ -8,7 +8,7 @@ As part of this task, you must also build a set of diverse programs written in `
 
 ### Language Description
 
-- Comments in simPLe (meant sPLash?) start with `(*` and end with `*)`.
+- Comments in sPLash start with `(*` and end with `*)`.
 - sPLash is white space insensitive.
 - A program is made of several declarations or definitions that precede the main body.
 - A declaration includes the name of the function, it's arguments, types and refinments, as well as the return type.

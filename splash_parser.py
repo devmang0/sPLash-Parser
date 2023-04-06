@@ -1,8 +1,9 @@
 import sys
 import os
+import argparse
 from lark import Lark, Transformer, v_args
 
-with open("grammars/sPLash_0_2.lark") as _grammar:
+with open("grammars/sPLash.lark") as _grammar:
     grammar = _grammar.read()
 
 
@@ -13,39 +14,23 @@ _parser = Lark(grammar, parser='lalr', start='start',
 parse = _parser.parse
 
 
-def main():
-    while True:
-        try:
-            s = input('> ')
-        except EOFError:
-            break
-        print(parse(s))
-
-
+argparser = argparse.ArgumentParser()
+argparser.add_argument("--tree", help="print AST", action="store_true")
+argparser.add_argument("file", help="file to parse")
+argsp = argparser.parse_args()
 
 def test(to_parse: str):
 
     prsd = parse(to_parse)
 
-    print(prsd)
-    print(prsd.pretty())
-    print(comments)
-    # print(parse("1+a*-3"))
+    if argsp.tree:
+        print(prsd.pretty())
+        print(comments)
 
-def run_tests(args):
+def run_tests():
 
-    tests = []
-
-    if len(args) == 1:
-        tests = ["positive/default_example.splash"]
-    else:
-        tests = args[1:]
-
-    for t in tests:
-        
-        print("testing: ", t)
-        with open("./tests/"+t) as f:
-            test(f.read())
+    with open("./tests/"+argsp.file) as f:
+        test(f.read())
         
 
 
@@ -56,6 +41,8 @@ def run_tests(args):
 
 
 if __name__ == '__main__':
-    run_tests(sys.argv)
+
+    run_tests()
+
     # test()
     # main()

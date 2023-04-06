@@ -6,12 +6,13 @@ statement: declaration
          | ifthenelse
          | while
          | return
+         | func_call ";"
 
 
 ?expression: neg
-           | NAME"("binder")"
+           | func_call
           
-?neg: sum  
+?neg: sum
           
 ?sum: prod
     | sum "+" prod -> add
@@ -27,11 +28,12 @@ statement: declaration
        | "-" factor -> neg
 
 
-?declaration: binder"(" (binder ["," binder]* )? ");" -> funcdec
+?declaration: binder func_args ";" -> funcdec
             | binder";" -> vardec
 
-?definition:  binder"(" (binder ["," binder]* )? ")" block -> funcdef
-           |  binder "=" expression ";" -> vardef 
+?definition: "main:Void" func_args block  -> main
+           | binder func_args block -> funcdef
+           | [binder|var] "=" expression ";" -> vardef 
 
 ?comparison: expression CMP_OP expression
 
@@ -39,15 +41,17 @@ statement: declaration
          | var
          | comparison LOG_OP condition
 
+func_call: NAME"("(expression ["," expression ]*)?")"
 
 
 ifthenelse: "if" condition block ["else" block]
-while: "while" block 
+while: "while" condition block 
 
 return: "return" [expression] ";"
 
 refinement: "where" condition
 
+func_args: "("(binder ["," binder]* )?")"
 
 block: "{" statement* "}"
 
@@ -60,7 +64,12 @@ binder: NAME":"type refinement?
      | FALSE
      | var
      | STRING
+     | NAME "["atom"]" -> index_access
      // | "("expression")" Parenthesized expression are part of this language?
+
+?type: TYPE
+     | "["type"]" -> arrayof
+
 
 
 
@@ -68,25 +77,20 @@ binder: NAME":"type refinement?
 LOG_OP: "&&" | "||"  
 ADD_OP:  "+" | "-" 
 MUL_OP: "*"  | "/"  | "%"
-
 CMP_OP: "==" | "!=" | ">=" | ">" | "<" | "<="
-
 UNOP: "!" | "-"
 
 INT: /((_*)?\d+)+/
 FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
 
-
-
-
-TYPE: "Int" | "Float" | "Double" | "Bool" |  "String"
+TYPE: "Int" | "Float" | "Double" | "Bool" | "String" | "Void"
 
 TRUE: "true" 
 FALSE: "false"
 
 
 // NAME (alias for common.CNAME) describes our variable format  
-INDEX_ACCESS: NAME"["INT"]" 
+// INDEX_ACCESS: NAME"["INT"]" 
 
 //  MISC
 COMMENT: "(*" /(.|\n)*?/ "*)" // Match any comments multiline
