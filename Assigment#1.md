@@ -58,6 +58,6 @@ pi:Int = 3; (* Engineers, am i right *)
 ### Questions
 
 1. Integer can start with underscores? (_1000_1223_4456)
-2. Can `-` be used as a unary operator as in `return -a` see this [test](/tests/abs_test.splash)
+2. Can `-` be used as a unary operator as in `return -a`
 3. Are returns obligatory in functions that do not return?
 
