@@ -22,9 +22,20 @@ After the inital setup, we don't need to run it ever again, just need to activat
 source ./venv/bin/activate
 ```
 
-After this we can really start using the parser, to do so I have also included a script that allows for testing the various examples.
+After this we can really start using the parser, to do so I have also included a script that allows for testing the various examples: 10 positive, and 10 negative.
 
 ```bash
+# Optionally use tree for AST print-out
+# negative tests disregard --tree since no AST is produced
+# ./splash [-tree] <file>
+
+./splash --tree positive/hello-world.sp 
+./splash negative/hello-worldnt.sp
+
 ```
+
+Once done testing the parser, use the command `deactivate` to deactivate the virtual env.
+
+----
 
 Author: Tomás Algarvio, fc54402
