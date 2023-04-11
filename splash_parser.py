@@ -31,18 +31,9 @@ def run_tests():
 
     with open("./tests/"+argsp.file) as f:
         test(f.read())
-        
-
-
-
-        
-        
-
 
 
 if __name__ == '__main__':
 
     run_tests()
 
-    # test()
-    # main()
