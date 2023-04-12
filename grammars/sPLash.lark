@@ -83,7 +83,7 @@ UNOP: "!" | "-"
 INT: /((_*)?\d+)+/
 FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
 
-TYPE: "Int" | "Float" | "Double" | "Bool" | "String" | "Void"
+TYPE: "Int" | "Double" | "Bool" | "String" | "Void"
 
 TRUE: "true" 
 FALSE: "false"
