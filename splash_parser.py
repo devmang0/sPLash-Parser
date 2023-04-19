@@ -1,109 +1,67 @@
 import sys
 import os
 import argparse
-from dataclasses import dataclass
-from typing import List
+import json
 
 from lark import Lark, Transformer, v_args
 from lark import ast_utils
 
-
-with open("grammars/sPLash.lark") as _grammar:
-    grammar = _grammar.read()
+from splashAST import *
 
 
-comments = []
-
-_parser = Lark(grammar, parser='lalr', start='start',
-               lexer_callbacks={"COMMENT": comments.append})
-parse = _parser.parse
+this_module = sys.modules[__name__]
 
 
+# Dealing with flags and arguments
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--tree", help="print AST", action="store_true")
+argparser.add_argument("--parsetree", help="print CST pretty", action="store_true")
+argparser.add_argument("--rawast", help="Raw AST representation", action="store_true")
+argparser.add_argument("--tree", help="AST as json", action="store_true")
+
 argparser.add_argument("file", help="file to parse")
 argsp = argparser.parse_args()
 
 
-@dataclass
-class _ASTNode(ast_utils.Ast):
-    pass
 
 
-class _Statement(_ASTNode):
-    pass
+# Parser
+
+with open("grammars/sPLash.lark") as _grammar:
+    grammar = _grammar.read()
+
+comments = []
+
+_parser = Lark(grammar, 
+               parser='lalr', 
+               start='start',
+               lexer_callbacks={"COMMENT": comments.append}, keep_all_tokens=False,
+               maybe_placeholders=True
+               )
+parse = _parser.parse
 
 
+#Transformer
 
-@dataclass
-class _Program(_ASTNode):
-    statements: List[_Statement]
-
-
-
-
-@dataclass
-class Declaration(_Statement):
-        type_ : str
-        name : str 
-        refinements : List[Refinement]
-
-@dataclass
-class Refinement(_ASTNode):
-    refinement: Condition
-
-
-@dataclass
-class Definition(_Statement):
-    def __init__(self, name, args, block):
-        self.name: name
-        self.args = args or []
-        self.block = block
-
-class BinaryOp:
-    def __init__(self, op, left, right):
-        self.op = op
-        self.left = left
-        self.right = right
-
-class UnaryOp:
-    def __init__(self, op, expr):
-        self.op = op
-        self.expr = expr
-
-class Literal:
-    def __init__(self, value, type_):
-        self.value = value
-        self.type_ = type_
-
-class IfThenElse:
-    def __init__(self, condition, if_block, else_block=None):
-        self.condition = condition
-        self.if_block = if_block
-        self.else_block = else_block
-
-@dataclass
-class While(_Statement):
-    condition: Condition
-    block: Block
-
-class Return:
-    pass
+trasformer = ast_utils.create_transformer(this_module, toAST())
 
 
 
-class Block(_ASTNode):
-    statements: List[_Statement]
-
-
+## Main execution
 
 def test(to_parse: str):
 
     prsd = parse(to_parse)
-
     if argsp.tree:
+        ast = trasformer.transform(prsd)
+        print(json.dumps(ast, indent=4 , cls=jsonAST))
+    if argsp.rawast:
+        ast = trasformer.transform(prsd)
+        print(ast)
+    if argsp.parsetree:
         print(prsd.pretty())
         print(comments)
+
+
 
 def run_tests():
 

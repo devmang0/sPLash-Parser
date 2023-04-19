@@ -6,7 +6,6 @@ others=""
 for i in $@
 do 
 
-    echo $i
     case $i in
 
         --*) flags="$flags $i";;

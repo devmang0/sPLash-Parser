@@ -1,9 +1,10 @@
 start: program
 program: statement*
 
-statement: declaration
+?statement: declaration
          | definition
-         | ifthenelse
+         | if_then_else
+         | set_val
          | while
          | return
          | func_call ";"
@@ -28,35 +29,37 @@ statement: declaration
        | "-" factor -> neg
 
 
-?declaration: binder func_args ";" -> funcdec
-            | binder";" -> vardec
+?declaration: _binder [refinement] func_args ";" -> func_dec
+            | _binder";" -> var_dec
 
 ?definition: "main:Void" func_args block  -> main
-           | binder func_args block -> funcdef
-           | [binder|var] "=" expression ";" -> vardef 
+           | _binder [refinement] func_args block -> func_def
+           | _binder "=" expression ";" -> var_def 
+
+?set_val: var "=" expression ";"
 
 ?comparison: expression CMP_OP expression
 
-?condition: comparison
-         | var
-         | comparison LOG_OP condition
+?test: comparison
+     | var
+     | comparison LOG_OP test
 
-func_call: NAME"("(expression ["," expression ]*)?")"
+func_call: NAME"("(expression (("," expression )*)?)?")"
 
 
-ifthenelse: "if" condition block ["else" block]
-while: "while" condition block 
+if_then_else: "if" test block ["else" block]
+while: "while" test block 
 
 return: "return" [expression] ";"
 
-refinement: "where" condition
+refinement: "where" test
 
-func_args: "("(binder ["," binder]* )?")"
+func_args: "("(_binder [refinement] (("," _binder [refinement])*)? )?")"
 
 block: "{" statement* "}"
 
 var: NAME
-binder: NAME":"type refinement?
+_binder: NAME":"type 
 
 ?atom: INT
      | FLOAT
@@ -64,7 +67,7 @@ binder: NAME":"type refinement?
      | FALSE
      | var
      | STRING
-     | NAME "["atom"]" -> index_access
+     | [NAME|func_call] "["atom"]" -> index_access
      // | "("expression")" Parenthesized expression are part of this language?
 
 ?type: TYPE

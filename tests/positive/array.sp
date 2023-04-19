@@ -1,5 +1,7 @@
 xs:[Int];
 
+xs[3] = 4; 
+
 arrArrARR:[[[Int]]]; (* 3d Arrays *)
 
 sum:Int ( xs:[Int] where len(xs) > 0 ){
