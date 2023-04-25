@@ -54,12 +54,14 @@ return: "return" [expression] ";"
 
 refinement: "where" test
 
-func_args: "("(_binder [refinement] (("," _binder [refinement])*)? )?")"
+func_args: "("(arg (("," arg)*)? )?")"
+
+arg: _binder [refinement]
 
 block: "{" statement* "}"
 
 var: NAME
-_binder: NAME":"type 
+_binder: NAME":"type_ 
 
 ?atom: INT
      | FLOAT
@@ -70,8 +72,8 @@ _binder: NAME":"type
      | [NAME|func_call] "["atom"]" -> index_access
      // | "("expression")" Parenthesized expression are part of this language?
 
-?type: TYPE
-     | "["type"]" -> arrayof
+?type_: TYPE
+      | "["type_"]" -> arrayof
 
 
 

@@ -7,16 +7,17 @@ from lark import Lark, Transformer, v_args
 from lark import ast_utils
 
 from splashAST import *
-
+from typechecking import *
 
 this_module = sys.modules[__name__]
 
 
 # Dealing with flags and arguments
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--parsetree", help="print CST pretty", action="store_true")
-argparser.add_argument("--rawast", help="Raw AST representation", action="store_true")
-argparser.add_argument("--tree", help="AST as json", action="store_true")
+argparser.add_argument("--parsetree",   help="print CST pretty", action="store_true")
+argparser.add_argument("--rawast",      help="Raw AST representation", action="store_true")
+argparser.add_argument("--tree",        help="AST as json", action="store_true")
+argparser.add_argument("--typecheck",   help="Typecheck the program", action="store_true")
 
 argparser.add_argument("file", help="file to parse")
 argsp = argparser.parse_args()
@@ -51,15 +52,20 @@ trasformer = ast_utils.create_transformer(this_module, toAST())
 def test(to_parse: str):
 
     prsd = parse(to_parse)
+    ast = trasformer.transform(prsd)
     if argsp.tree:
-        ast = trasformer.transform(prsd)
         print(json.dumps(ast, indent=4 , cls=jsonAST))
     if argsp.rawast:
         ast = trasformer.transform(prsd)
         print(ast)
     if argsp.parsetree:
+        print(prsd)
         print(prsd.pretty())
         print(comments)
+
+    if argsp.typecheck:
+        ctx = Context()
+        verify(ctx, ast)
 
 
 

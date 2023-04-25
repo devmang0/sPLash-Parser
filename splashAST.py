@@ -9,25 +9,47 @@ from lark.tree import Meta
 from dataclasses import dataclass
 from typing import List
 
+t_int = "Int"
+t_double = "Double"
+t_float = "Float"
+t_string = "String"
+t_bool = "Bool"
+t_void = "Void"
 
-
-## Language A
 
 
 @dataclass
-class _ASTNode(ast_utils.Ast):
+class _Node(ast_utils.Ast):
     pass
 
 
 @dataclass
-class _Statement(_ASTNode):
+class _Ty(_Node):
     pass
 
+@dataclass
+class BasicType(_Ty):
+    ty: str
 
 @dataclass
-class Program(_ASTNode, ast_utils.AsList):
+class Numeric(_Ty):
+    pass
+
+@dataclass
+class Int(Numeric):
+    pass
+
+@dataclass
+class Float(Numeric):
+    pass
+
+@dataclass
+class _Statement(_Node):
+    pass
+
+@dataclass
+class Program(_Node, ast_utils.AsList):
     statements: List[_Statement] = None
-
 
 
 @dataclass
@@ -37,27 +59,30 @@ class Expression(_Statement):
 
 
 @dataclass
-class Declaration(_ASTNode):
+class Declaration(_Node):
     pass
 
 
 @dataclass
-class Test(_ASTNode):
+class Test(_Node):
     pass
 
 
+# @dataclass
+# class Type(_Node):
+#     pass
+
+
 @dataclass
-class Type(_ASTNode):
+class Variable(_Node):
     pass
 
-
-@dataclass
-class Variable(_ASTNode):
-    pass
+# @dataclass
+# class Value(_Node):
 
 
 @dataclass
-class Comparison(_ASTNode):
+class Comparison(_Node):
     l_expr : Expression
     op: str
     r_expr : Expression
@@ -65,18 +90,18 @@ class Comparison(_ASTNode):
 
 
 @dataclass
-class Refinement(_ASTNode):
+class Refinement(_Node):
     cond: Test
 
 
 @dataclass
-class Block(_ASTNode, ast_utils.AsList):
+class Block(_Node, ast_utils.AsList):
     statements: List[_Statement] = None
 
 
 @dataclass
 class Declaration(_Statement):
-        type_ : str
+        type_ : BasicType
         name : str 
         refinements : List[Refinement] = None
 
@@ -88,12 +113,17 @@ class Declaration(_Statement):
 #         block: Block
 
 @dataclass
-class FuncArgs(_ASTNode, ast_utils.AsList):
+class FuncArgs(_Node, ast_utils.AsList):
     """
         corresponds to func_args
     """
     args: List = None
 
+@dataclass
+class Arg(_Node):
+    name: str
+    type_: BasicType
+    refinement: Refinement
 
 @dataclass
 class VarDef(_Statement):
@@ -174,7 +204,7 @@ class Return(_Statement):
     value: Expression
 
 @dataclass
-class Var(_ASTNode):
+class Var(_Node):
     name:str
     # value:Any
 
@@ -188,8 +218,16 @@ class toAST(Transformer):
     def INT(self, i):
         return int(i)
         
-    def FLOAT(self, i):
-        return float(i)
+    def FLOAT(self, f):
+        return float(f)
+
+    def TYPE(self, t):
+        # print(t)
+        if t.value.lower() == t_float.lower():
+            return Float()
+        
+
+        return BasicType(t.value)
 
     @v_args(inline=True)
     def start(self, x):
@@ -198,15 +236,10 @@ class toAST(Transformer):
 
 
 class jsonAST(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        for k,v in o.__dict__.items():
-            if v != None:
-                if v.__class__.__name__.lower() == k:
-                     pass
+    def default(self, o: Any) -> Any: 
 
-
-        # return {o.__class__.__name__.lower() : o.__dict__} 
-
-
-
+        # Removes fields not collected
+        # Removing duplicates fields such as 
+        # refinement:{ refinement: {cond:}} could be done, 
+        # for representation purposes, but not needed for now
         return { o.__class__.__name__.lower() : { k:v for k, v in o.__dict__.items() if v != None }}
