@@ -25,19 +25,19 @@ class _Literal():
 
 @dataclass
 class IntLit(_Literal):
-    val: int
+    val: int = 0
 
-
+@dataclass
 class DoubleLit(_Literal):
-    val: float
+    val: float = 0.0
 
 @dataclass
 class StringLit(_Literal):
-    val: bool
+    val: str = ""
 
 @dataclass
 class BoolLit(_Literal):
-    val: bool
+    val: bool = False
 
 @dataclass
 class VoidLit(_Literal):
@@ -67,7 +67,7 @@ class Numeric(BasicType):
     pass
 
 @dataclass
-class Int(Numeric):
+class Int(Numeric, IntLit):
     pass
 
 @dataclass

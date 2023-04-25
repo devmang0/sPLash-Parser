@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from splashAST import *
-from splashAST import _Ty, _Node
+from splashAST import _Ty, _Node, _Literal
 
 RETURN="#return"
 
@@ -59,15 +59,22 @@ def is_subtype(ctx:Context, this, that ):
     return issubclass(this.__class__, that.__class__) and liquid_type_check(ctx, this, that)
          
 
-def infer_type(ctx:Context, expr:Expression):
+def infer_type(ctx:Context, expr:Expression) -> _Ty:
 
+    if isinstance(expr, IndexAccess):
+        if ctx.has_var(expr.name):
+            return ctx.get_type(expr.name).innerType
 
+    if isinstance(expr, _Literal):
+        return expr.__class__
 
-    if isinstance(expr, Var):
+    elif isinstance(expr, Var):
         return ctx.get_type(expr.name).__class__
 
     elif is_subtype(ctx, expr, _Ty()):
         return expr.__class__
+    
+
 
     return ctx.get_type(expr)
 
@@ -111,8 +118,9 @@ def verify(ctx:Context, node):
             ctx.exit_scope()
     
     elif isinstance(node, Comparison):
+        print(infer_type(ctx, node.l_expr), infer_type(ctx, node.r_expr))
         if infer_type(ctx, node.l_expr) != infer_type(ctx, node.r_expr):
-            raise TypeError(f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable", node=node)
+            raise TypeError(f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
         return Bool
 
     elif isinstance(node, Var):
@@ -150,11 +158,8 @@ def verify(ctx:Context, node):
         name = None
         expected = None
 
-        if isinstance(node.varToSet, IndexAccess):
-            name, expected = infer_type(ctx, node)
-        elif isinstance(node.varToSet, str):
-            name = node.varToSet
-            expected = ctx.get_type(name)
+        name, expected = infer_type(ctx, node)
+        
             
         if ctx.has_var( name ):
         
