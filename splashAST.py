@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import List, Any
+from typing import List, Any, Union
 
 from lark  import Lark, ast_utils, Transformer, v_args
 from lark.tree import Meta
@@ -11,28 +11,59 @@ from typing import List
 
 t_int = "Int"
 t_double = "Double"
-t_float = "Float"
+# t_float = "Float"
 t_string = "String"
 t_bool = "Bool"
 t_void = "Void"
 
+
+# ==== LITERALS ====
+
+@dataclass
+class _Literal():
+    pass
+
+@dataclass
+class IntLit(_Literal):
+    val: int
+
+
+class DoubleLit(_Literal):
+    val: float
+
+@dataclass
+class StringLit(_Literal):
+    val: bool
+
+@dataclass
+class BoolLit(_Literal):
+    val: bool
+
+@dataclass
+class VoidLit(_Literal):
+    val: None
+
+# ====== AST NODES ======
 
 
 @dataclass
 class _Node(ast_utils.Ast):
     pass
 
-
 @dataclass
 class _Ty(_Node):
     pass
 
 @dataclass
-class BasicType(_Ty):
-    ty: str
+class Array(_Ty):
+    innerType: _Ty
 
 @dataclass
-class Numeric(_Ty):
+class BasicType(_Ty):
+    pass
+
+@dataclass
+class Numeric(BasicType):
     pass
 
 @dataclass
@@ -40,7 +71,18 @@ class Int(Numeric):
     pass
 
 @dataclass
-class Float(Numeric):
+class Double(Numeric):
+    pass
+
+@dataclass
+class Bool(BasicType):
+    pass
+
+@dataclass
+class String(BasicType):
+    pass
+
+class Void(BasicType):
     pass
 
 @dataclass
@@ -68,17 +110,10 @@ class Test(_Node):
     pass
 
 
-# @dataclass
-# class Type(_Node):
-#     pass
-
 
 @dataclass
 class Variable(_Node):
     pass
-
-# @dataclass
-# class Value(_Node):
 
 
 @dataclass
@@ -122,20 +157,34 @@ class FuncArgs(_Node, ast_utils.AsList):
 @dataclass
 class Arg(_Node):
     name: str
-    type_: BasicType
+    type_: _Ty
     refinement: Refinement
 
 @dataclass
 class VarDef(_Statement):
     name:str
-    type_:str
+    type_:_Ty
     value:str
 
     # @v_args(inline=True)
     # def __init__(self, *args):
     #     print("ARGS: |", args, "|")
 
+@dataclass
+class VarDec(_Statement):
+    name:str
+    type_:_Ty
 
+@dataclass
+class IndexAccess(_Statement):
+    name: str
+    index: Int
+
+
+@dataclass
+class SetVal(_Statement):
+    varToSet: Union[str, IndexAccess]
+    value: Expression
 
 @dataclass
 class FuncCall(Expression):
@@ -155,18 +204,6 @@ class FuncDef(_Statement):
     # def __init__(self, *args):
     #     print("ARGS: |", args, "|")
         
-
-# @dataclass
-# class BinaryOp(_Statement):
-#     op:  str
-#     left:  Expression
-#     right:  Expression
-
-
-# @dataclass        
-# class UnaryOp(_Statement):
-#     op: str
-#     expr: Expression
 
 # ==================== BASIC OPERATIONS ====================
 
@@ -196,7 +233,7 @@ class IfThenElse(_Statement):
 
 @dataclass
 class While(_Statement):
-    # condition: Condition
+    condition: Test
     block: Block
 
 @dataclass
@@ -211,21 +248,40 @@ class Var(_Node):
 
 
 class toAST(Transformer):
+
+    type_dict = {
+        "int" : Int,
+        "double": Double,
+        "float": Double,
+        "bool": Bool,
+        "string": String,
+        "void": Void
+    }
+
+
     
+    def NAME(self, n):
+        return n.value
+
+    def BOOL(self, b):
+        return BoolLit(bool(b.value.lower()))
+
     def STRING(self, s):
-        return s[1:-1]
+        return StringLit(s[1:-1])
     
     def INT(self, i):
-        return int(i)
+        return IntLit(int(i))
         
-    def FLOAT(self, f):
-        return float(f)
+    def DOUBLE(self, d):
+        return DoubleLit(float(d))
+    
+    def VOID(self, d):
+        return VoidLit()
 
     def TYPE(self, t):
-        # print(t)
-        if t.value.lower() == t_float.lower():
-            return Float()
         
+        if t.value.lower() in self.type_dict:
+            return self.type_dict[t.value.lower()]()
 
         return BasicType(t.value)
 

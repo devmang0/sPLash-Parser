@@ -37,6 +37,7 @@ program: statement*
            | _binder "=" expression ";" -> var_def 
 
 ?set_val: var "=" expression ";"
+        | index_access "=" expression ";"
 
 ?comparison: expression CMP_OP expression
 
@@ -69,11 +70,13 @@ _binder: NAME":"type_
      | FALSE
      | var
      | STRING
-     | [NAME|func_call] "["atom"]" -> index_access
-     // | "("expression")" Parenthesized expression are part of this language?
+     | index_access
+     | "("expression")" // Parenthesized expression are part of this language?
+
+index_access: [NAME|func_call] "["expression"]"
 
 ?type_: TYPE
-      | "["type_"]" -> arrayof
+      | "["type_"]" -> array
 
 
 
@@ -85,8 +88,8 @@ MUL_OP: "*"  | "/"  | "%"
 CMP_OP: "==" | "!=" | ">=" | ">" | "<" | "<="
 UNOP: "!" | "-"
 
-INT: /((_*)?\d+)+/
-FLOAT: DIGIT+ | DIGIT*"."DIGIT+ 
+INT: (DIGIT+"_"*)+
+FLOAT: DIGIT*"."DIGIT+ 
 
 TYPE: "Int" | "Double" | "Bool" | "String" | "Void"
 

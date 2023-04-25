@@ -65,7 +65,7 @@ def test(to_parse: str):
 
     if argsp.typecheck:
         ctx = Context()
-        verify(ctx, ast)
+        print("Typechecks?", verify(ctx, ast))
 
 
 
