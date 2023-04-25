@@ -178,7 +178,7 @@ class FuncDef(_Statement):
     name: str = ""
     type_: str  = "Void"
     refinement: Refinement = None
-    args: FuncArgs = None
+    params: FuncArgs = None
     block: Block = None    
 
     # def __init__(self, *args):
@@ -244,16 +244,16 @@ class toAST(Transformer):
         return n.value
 
     def BOOL(self, b):
-        return Literal(type_=Bool(), var=bool(b.value.lower()))
+        return Literal(type_=Bool(), val=bool(b.value.lower()))
 
     def STRING(self, s):
-        return Literal(type_=String(), var=s[1:-1])
+        return Literal(type_=String(), val=s[1:-1])
     
     def INT(self, i):
-        return Literal(type_=Int(), var=int(i))
+        return Literal(type_=Int(), val=int(i))
         
     def DOUBLE(self, d):
-        return Literal(type_=Double(), var=float(d))
+        return Literal(type_=Double(), val=float(d))
     
     def VOID(self, d):
         return Literal(type_=Void)

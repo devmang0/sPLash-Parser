@@ -45,8 +45,6 @@ parse = _parser.parse
 
 trasformer = ast_utils.create_transformer(this_module, toAST())
 
-
-
 ## Main execution
 
 def test(to_parse: str):
@@ -65,7 +63,8 @@ def test(to_parse: str):
 
     if argsp.typecheck:
         ctx = Context()
-        print("Typechecks?", verify(ctx, ast))
+        verify(ctx, ast)
+        print("typechecks")
 
 
 

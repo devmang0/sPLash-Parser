@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from splashAST import *
-from splashAST import _Ty, _Node, _Literal
+from splashAST import _Ty, _Node
 
 RETURN="#return"
 
@@ -55,7 +55,8 @@ class Context():
 
 
 def is_subtype(ctx:Context, this, that ):
-    # print( "superclasses:", this.__mro__ )
+    print(f" {this.__class__} subclass of {that.__class__}?:",
+          issubclass(this.__class__, that.__class__))
     return issubclass(this.__class__, that.__class__) and liquid_type_check(ctx, this, that)
          
 
@@ -64,8 +65,8 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
     if isinstance(expr, IndexAccess):
         if ctx.has_var(expr.name):
             return ctx.get_type(expr.name).innerType
-
-    if isinstance(expr, Literal):
+        
+    elif isinstance(expr, Literal):
         return expr.type_.__class__
 
     elif isinstance(expr, Var):
@@ -93,10 +94,15 @@ def verify(ctx:Context, node):
             verify(ctx, st)
     
     elif isinstance(node, FuncDef):
+        
+        ctx.set_type(node.name, value=node)
+        
         ctx.enter_scope()
-        ctx.set_type(RETURN, value=node.type_)
-        for arg in node.args.args:
-            ctx.set_type(arg.name, arg.type_)
+        
+        ctx.set_type(RETURN, node.type_)
+        
+        for param in node.params.args:
+            ctx.set_type(param.name, param.type_)
         ctx.enter_scope()
         for st in node.block.statements:
             verify(ctx, st)
@@ -143,7 +149,9 @@ def verify(ctx:Context, node):
         expected = ctx.get_type(RETURN)
         actual = node.value
 
-        if is_subtype(ctx, actual, expected):
+        print(f"hit! {expected} {actual}")
+
+        if not is_subtype(ctx, actual, expected):
             raise TypeError(
                 f"Invalid Return Type: Expected: {expected} but got {actual}")
 
@@ -158,7 +166,8 @@ def verify(ctx:Context, node):
         name = None
         expected = None
 
-        name, expected = infer_type(ctx, node)
+        print(json.dumps(node, indent=2, cls=jsonAST))
+        expected = infer_type(ctx, node.varToSet)
         
             
         if ctx.has_var( name ):
@@ -167,10 +176,36 @@ def verify(ctx:Context, node):
             if not is_subtype(ctx, actual, expected):
                 raise TypeError(f"Type mismatch: Expected {expected} and got {actual}")
             
+    elif isinstance(node, FuncCall):
 
+        if ctx.has_var(node.called): # If function is defined
+            
+            fd:FuncDef = ctx.get_type(node)
+
+            if len(fd.params.args) != len(node.args.args) :
+                raise TypeError(f"Unexpected number of arguments for function {node.called}")
+            
+            for act, exp in zip(node.args.args, fd.params.args):
+                if not is_subtype(ctx, act, exp):
+                    raise TypeError(f"Type mismatch: Expected {exp} but got {act}")
+    
+    elif isinstance(node, While):
+        
+        if verify(ctx, node.condition) != Bool:
+            raise TypeError(f"While condition must be of type {Bool}")
+        
+        ctx.enter_scope()
+        for stmt in node.block.statements:
+            verify(ctx, stmt)
+        ctx.exit_scope()
+
+                
+
+        
+
+ 
 
     else:
         print(f"Don't know how to handle {node.__class__.__name__}:{node}")
-        return False
 
-    return True
+    # print("Last Context: ", json.dumps(ctx.stack, indent=4, cls=jsonAST))

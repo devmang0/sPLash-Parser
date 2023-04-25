@@ -6,4 +6,9 @@ abs:Int where abs >= 0 ( a:Int ){
     return a;
 }
 
-main:Void(){} 
+main:Void(){
+
+    print( abs("NotAnInt!") );
+
+} 
+
