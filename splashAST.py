@@ -17,34 +17,7 @@ t_bool = "Bool"
 t_void = "Void"
 
 
-# ==== LITERALS ====
-
-@dataclass
-class _Literal():
-    pass
-
-@dataclass
-class IntLit(_Literal):
-    val: int = 0
-
-@dataclass
-class DoubleLit(_Literal):
-    val: float = 0.0
-
-@dataclass
-class StringLit(_Literal):
-    val: str = ""
-
-@dataclass
-class BoolLit(_Literal):
-    val: bool = False
-
-@dataclass
-class VoidLit(_Literal):
-    val: None
-
 # ====== AST NODES ======
-
 
 @dataclass
 class _Node(ast_utils.Ast):
@@ -67,7 +40,7 @@ class Numeric(BasicType):
     pass
 
 @dataclass
-class Int(Numeric, IntLit):
+class Int(Numeric):
     pass
 
 @dataclass
@@ -84,6 +57,13 @@ class String(BasicType):
 
 class Void(BasicType):
     pass
+
+
+@dataclass
+class Literal():
+    type_ : _Ty
+    val: any
+
 
 @dataclass
 class _Statement(_Node):
@@ -264,19 +244,19 @@ class toAST(Transformer):
         return n.value
 
     def BOOL(self, b):
-        return BoolLit(bool(b.value.lower()))
+        return Literal(type_=Bool(), var=bool(b.value.lower()))
 
     def STRING(self, s):
-        return StringLit(s[1:-1])
+        return Literal(type_=String(), var=s[1:-1])
     
     def INT(self, i):
-        return IntLit(int(i))
+        return Literal(type_=Int(), var=int(i))
         
     def DOUBLE(self, d):
-        return DoubleLit(float(d))
+        return Literal(type_=Double(), var=float(d))
     
     def VOID(self, d):
-        return VoidLit()
+        return Literal(type_=Void)
 
     def TYPE(self, t):
         

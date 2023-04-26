@@ -65,8 +65,8 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
         if ctx.has_var(expr.name):
             return ctx.get_type(expr.name).innerType
 
-    if isinstance(expr, _Literal):
-        return expr.__class__
+    if isinstance(expr, Literal):
+        return expr.type_.__class__
 
     elif isinstance(expr, Var):
         return ctx.get_type(expr.name).__class__
