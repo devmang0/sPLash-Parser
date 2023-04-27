@@ -135,13 +135,15 @@ class FuncArgs(_Node, ast_utils.AsList):
     args: List = None
 
 @dataclass
-class Arg(_Node):
+class Arg(_Node, ast_utils.WithMeta):
+    meta: Meta
     name: str
     type_: _Ty
-    refinement: Refinement
+    refinement: Refinement = None
 
 @dataclass
-class VarDef(_Statement):
+class VarDef(_Statement, ast_utils.WithMeta):
+    meta:Meta
     name:str
     type_:_Ty
     value:str
@@ -224,7 +226,8 @@ class While(_Statement):
     block: Block
 
 @dataclass
-class Return(_Statement):
+class Return(_Statement, ast_utils.WithMeta):
+    meta:Meta
     value: Expression
 
 @dataclass
@@ -263,7 +266,7 @@ class toAST(Transformer):
         return Literal(type_=Double(), val=float(d))
     
     def VOID(self, d):
-        return Literal(type_=Void)
+        return Literal(type_=Void())
 
     def TYPE(self, t):
         

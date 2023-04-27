@@ -14,7 +14,7 @@ class TypeError(Exception):
         if not meta :
             super().__init__(message)
         else:
-            super().__init__( f"Error found in {meta.line}: ", message)
+            super().__init__(f"Error found in {meta.line},{meta.column}: ", message)
 
 @dataclass
 class Context():
@@ -36,8 +36,8 @@ class Context():
     
 
 
-    def set_type(self, name:str, value:str):
-        self.stack[-1][name] = value
+    def set_type(self, name:str, value:str, refinement:Refinement=None):
+        self.stack[-1][name] = {"type": value, "ref":refinement}
         
     def has_var(self, name:str):
         for scope in self.stack.__reversed__():
@@ -59,10 +59,17 @@ class Context():
 
 
 def is_subtype(ctx:Context, this, that ):
-    print(f" {this.__class__} subclass of {that.__class__}?:",
+    print(f"{this.__class__.__name__} subclass of {that.__class__.__name__}?:",
           issubclass(this.__class__, that.__class__))
     return issubclass(this.__class__, that.__class__) and liquid_type_check(ctx, this, that)
-         
+
+
+def liquid_type_check(ctx: Context, this, that) -> bool:
+
+    print(this, that)
+    print("Liquid types are not yet implemented")
+    
+    return True
 
 def infer_type(ctx:Context, expr:Expression) -> _Ty:
 
@@ -73,7 +80,7 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
             return ctx.get_type(expr.name).innerType
         
     elif isinstance(expr, Literal):
-        return expr.type_.__class__
+        return expr.type_
 
     elif isinstance(expr, Var):
         return ctx.get_type(expr.name)
@@ -81,16 +88,11 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
     elif isinstance(expr, FuncCall):
         func_sign: FuncDef = ctx.get_type(expr.called)
         return func_sign.type_
-
-    elif is_subtype(ctx, expr, _Ty()):
-        return expr.__class__
     
     return ctx.get_type(expr)
 
 
-def liquid_type_check(ctx:Context, this, that) -> bool:
-    print("Liquid types are not yet implemented")
-    return True
+
 
 
     
@@ -149,18 +151,20 @@ def verify(ctx:Context, node):
     
     elif isinstance(node, Neg):
         tmp = infer_type(ctx, node.expr)
-        if is_subtype(ctx, tmp , Numeric()):
+        if not is_subtype(ctx, tmp , Numeric()):
             raise TypeError(f"Can't use unary minus on non-numeric types. Type used: {tmp}")
         return tmp
     
     elif isinstance(node, Return):
 
         expected = ctx.get_type(RETURN)
-        actual = node.value
+        if node.value != None:
+            actual = verify(ctx, node.value)
+        else:
+            actual = Void()
 
-        if not is_subtype(ctx, infer_type(ctx, actual), expected):
-            raise TypeError(
-                f"Invalid Return Type: Expected: {expected} but got {actual}")
+        if not is_subtype(ctx, actual, expected):
+            raise TypeError(f"Invalid Return Type: Expected {expected.__class__.__name__} but got {actual.__class__.__name__}", meta=node.meta)
 
     elif isinstance(node, VarDec):
 
@@ -173,9 +177,7 @@ def verify(ctx:Context, node):
         name = None
         expected = None
 
-
         expected = infer_type(ctx, node.varToSet)
-        
             
         if ctx.has_var( name ):
         
@@ -185,7 +187,7 @@ def verify(ctx:Context, node):
             
     elif isinstance(node, FuncCall):
 
-        print("NODE: META:", node.meta)
+        # print("NODE META:", node.meta)
 
         if ctx.has_var(node.called): # If function is defined
 
@@ -209,6 +211,8 @@ def verify(ctx:Context, node):
             verify(ctx, stmt)
         ctx.exit_scope()
 
+    elif isinstance(node, Literal):
+        return infer_type(ctx, node)
                 
 
         

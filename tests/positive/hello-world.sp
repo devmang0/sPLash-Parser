@@ -5,6 +5,6 @@ greeting:String = "Hello";
 main:Void(){
 
     print( greeting + "World!");
-    return 0;
+    return;
     
 }

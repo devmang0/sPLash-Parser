@@ -15,4 +15,7 @@ do
 
 done
 
-python splash_parser.py $flags $others
+for i in $others
+do
+    python splash_parser.py $flags $i
+done

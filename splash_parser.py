@@ -71,7 +71,7 @@ def test(to_parse: str):
 
 def run_tests():
 
-    with open("./tests/"+argsp.file) as f:
+    with open(argsp.file) as f:
         test(f.read())
 
 
