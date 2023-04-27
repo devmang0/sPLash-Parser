@@ -73,7 +73,7 @@ _binder: NAME":"type_
      | index_access
      | "("expression")" // Parenthesized expression are part of this language?
 
-index_access: [NAME|func_call] "["expression"]"
+index_access: [NAME|func_call|index_access] "["expression"]"
 
 ?type_: TYPE
       | "["type_"]" -> array
@@ -113,8 +113,3 @@ COMMENT: "(*" /(.|\n)*?/ "*)" // Match any comments multiline
 %import common.CNAME -> NAME
 %import common.ESCAPED_STRING -> STRING
 %import common.DIGIT
-
-
-
-
-

@@ -167,9 +167,16 @@ class SetVal(_Statement):
     value: Expression
 
 @dataclass
-class FuncCall(Expression):
+class FuncCall(Expression, ast_utils.WithMeta):
+    meta: Meta
     called: str
-    args: FuncArgs = None
+    args: List[Expression]
+
+    def __init__(self, *params):
+        self.meta = params[0]
+        self.called = params[1]
+        self.args = list(params[2:])
+
 
 
 @dataclass

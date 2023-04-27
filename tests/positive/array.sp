@@ -2,6 +2,10 @@ xs:[Int];
 
 xs[3] = 4; 
 
+len:Int(a:[Int]){
+    (*Maybe implement the actual function?*)
+}
+
 arrArrARR:[[[Int]]]; (* 3d Arrays *)
 
 sum:Int ( xs:[Int] where len(xs) > 0 ){
@@ -16,7 +20,16 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
         i = i + 1;
     }
 
-    return ls;
+    return sum;
 
 }
 (* print(sum(xs)) *)
+
+
+main:Void(){
+
+    sum:Double = sum(xs);
+    x:[[Int]] = arrArrARR[0];
+    y:[Int] = arrArrARR[0][0];
+
+}

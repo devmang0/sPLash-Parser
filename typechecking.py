@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from lark.tree import Meta
 from splashAST import *
 from splashAST import _Ty, _Node
 
@@ -6,11 +7,14 @@ RETURN="#return"
 
 class TypeError(Exception):
 
-    def __init__(self, message: str, node: _Node = None) -> None:
-        if node == None:
+    def __init__(self, message: str, meta:Meta = None):
+
+        print("META:", meta)
+
+        if not meta :
             super().__init__(message)
         else:
-            super().__init__( f"Error found in {node.line}"+message)
+            super().__init__( f"Error found in {meta.line}: ", message)
 
 @dataclass
 class Context():
@@ -28,7 +32,7 @@ class Context():
         for scope in self.stack.__reversed__():
             if name in scope:
                 return scope[name]
-        raise TypeError(f"Variable {name} not in context")
+        raise TypeError(f"Identifier {name} not in context")
     
 
 
@@ -62,6 +66,8 @@ def is_subtype(ctx:Context, this, that ):
 
 def infer_type(ctx:Context, expr:Expression) -> _Ty:
 
+    # print("INFERING EXPR TYPE:", expr)
+
     if isinstance(expr, IndexAccess):
         if ctx.has_var(expr.name):
             return ctx.get_type(expr.name).innerType
@@ -70,13 +76,15 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
         return expr.type_.__class__
 
     elif isinstance(expr, Var):
-        return ctx.get_type(expr.name).__class__
+        return ctx.get_type(expr.name)
+
+    elif isinstance(expr, FuncCall):
+        func_sign: FuncDef = ctx.get_type(expr.called)
+        return func_sign.type_
 
     elif is_subtype(ctx, expr, _Ty()):
         return expr.__class__
     
-
-
     return ctx.get_type(expr)
 
 
@@ -124,7 +132,7 @@ def verify(ctx:Context, node):
             ctx.exit_scope()
     
     elif isinstance(node, Comparison):
-        print(infer_type(ctx, node.l_expr), infer_type(ctx, node.r_expr))
+        print(verify(ctx, node.l_expr), verify(ctx, node.r_expr))
         if infer_type(ctx, node.l_expr) != infer_type(ctx, node.r_expr):
             raise TypeError(f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
         return Bool
@@ -137,6 +145,7 @@ def verify(ctx:Context, node):
     elif isinstance(node, VarDef):
         if ctx.is_var_in_current_scope(node.name):
             raise TypeError(f"Variable {node.name} already defined in current context")
+        ctx.set_type(node.name, node.type_)
     
     elif isinstance(node, Neg):
         tmp = infer_type(ctx, node.expr)
@@ -149,9 +158,7 @@ def verify(ctx:Context, node):
         expected = ctx.get_type(RETURN)
         actual = node.value
 
-        print(f"hit! {expected} {actual}")
-
-        if not is_subtype(ctx, actual, expected):
+        if not is_subtype(ctx, infer_type(ctx, actual), expected):
             raise TypeError(
                 f"Invalid Return Type: Expected: {expected} but got {actual}")
 
@@ -166,7 +173,7 @@ def verify(ctx:Context, node):
         name = None
         expected = None
 
-        print(json.dumps(node, indent=2, cls=jsonAST))
+
         expected = infer_type(ctx, node.varToSet)
         
             
@@ -178,19 +185,22 @@ def verify(ctx:Context, node):
             
     elif isinstance(node, FuncCall):
 
-        if ctx.has_var(node.called): # If function is defined
-            
-            fd:FuncDef = ctx.get_type(node)
+        print("NODE: META:", node.meta)
 
-            if len(fd.params.args) != len(node.args.args) :
-                raise TypeError(f"Unexpected number of arguments for function {node.called}")
+        if ctx.has_var(node.called): # If function is defined
+
+            fd:FuncDef = ctx.get_type(node.called)
+
+            if len(fd.params.args) != len(node.args) :
+                raise TypeError(f"Unexpected number of arguments for function {node.called}", meta=node.meta)
             
-            for act, exp in zip(node.args.args, fd.params.args):
-                if not is_subtype(ctx, act, exp):
-                    raise TypeError(f"Type mismatch: Expected {exp} but got {act}")
+            for act, exp in zip(node.args, fd.params.args):
+                if not is_subtype(ctx, infer_type(ctx,act),  exp.type_):
+                    raise TypeError(f"Type mismatch: Expected {exp} but got {act}", meta=node.meta)
     
     elif isinstance(node, While):
         
+       
         if verify(ctx, node.condition) != Bool:
             raise TypeError(f"While condition must be of type {Bool}")
         

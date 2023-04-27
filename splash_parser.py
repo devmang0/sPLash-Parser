@@ -36,7 +36,8 @@ _parser = Lark(grammar,
                parser='lalr', 
                start='start',
                lexer_callbacks={"COMMENT": comments.append}, keep_all_tokens=False,
-               maybe_placeholders=True
+               maybe_placeholders=True,
+               propagate_positions=True,
                )
 parse = _parser.parse
 
