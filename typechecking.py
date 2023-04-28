@@ -62,7 +62,7 @@ class Context():
 
 
 def is_subtype(ctx:Context, this, that ):
-    print(f"{this.__class__.__name__} subclass of {that.__class__.__name__}?:", issubclass(this.__class__, that.__class__))
+    # print(f"{this.__class__.__name__} subclass of {that.__class__.__name__}?:", issubclass(this.__class__, that.__class__))
     sc: bool = issubclass(this.__class__, that.__class__)
 
     if isinstance(this, Array) and isinstance(that, Array):
@@ -86,8 +86,7 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
     if isinstance(expr, Neg) or isinstance(expr, Not) :
         return infer_type(ctx, expr.expr)
     
-    elif isinstance(expr, Add):
-        
+    elif isinstance(expr, Add):        
         l_ty = infer_type(ctx, expr.l_expr)
         r_ty = infer_type(ctx, expr.r_expr)
 
@@ -102,13 +101,71 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
         else:
             return Int()
         
+    elif isinstance(expr, Sub):
+        l_ty = infer_type(ctx, expr.l_expr)
+        r_ty = infer_type(ctx, expr.r_expr)
 
-        # TODO - Infer Stronger Type
+        mul_forbidden = (String, Bool, Void)
+
+        if isinstance(l_ty, mul_forbidden) or isinstance(r_ty, mul_forbidden):
+            raise TypeError(
+                f"Can't use binary minus operand with String, Bool or Void types")
+
+        if isinstance(l_ty, Double) or isinstance(r_ty,  Double):
+            return Double()
+        else:
+            return Int()
+
+    elif isinstance(expr, Mul):
+        l_ty = infer_type(ctx, expr.l_expr)
+        r_ty = infer_type(ctx, expr.r_expr)
+
+        mul_forbidden = (String, Bool, Void)
+
+        if isinstance(l_ty, mul_forbidden ) or isinstance(r_ty, mul_forbidden):
+            raise TypeError(f"Can't use multiplication operand with String, Bool or Void types")
+
+
+        if isinstance(l_ty, Double) or isinstance(r_ty,  Double):
+            return Double()
+        else:
+            return Int()
+        
+    elif isinstance(expr, Div):
+        l_ty = infer_type(ctx, expr.l_expr)
+        r_ty = infer_type(ctx, expr.r_expr)
+
+        mul_forbidden = (String, Bool, Void)
+
+        if isinstance(l_ty, mul_forbidden) or isinstance(r_ty, mul_forbidden):
+            raise TypeError(
+                f"Can't use division operand with String, Bool or Void types")
+
+        if isinstance(l_ty, Double) or isinstance(r_ty,  Double):
+            return Double()
+        else:
+            return Int()
+    
+    elif isinstance(expr, Mod):
+        l_ty = infer_type(ctx, expr.l_expr)
+        r_ty = infer_type(ctx, expr.r_expr)
+
+        mul_forbidden = (String, Bool, Void)
+
+        if isinstance(l_ty, mul_forbidden) or isinstance(r_ty, mul_forbidden):
+            raise TypeError(
+                f"Can't use mod operand with String, Bool or Void types")
+
+        if isinstance(l_ty, Double) or isinstance(r_ty,  Double):
+            return Double()
+        else:
+            return Int()
+
 
     elif isinstance(expr, IndexAccess):
 
         indexed_exp_type = infer_type(ctx, expr.indexed)
-        print("Indexed_exp_type: ", indexed_exp_type)
+        # print("Indexed_exp_type: ", indexed_exp_type)
         if not isinstance(indexed_exp_type, Array):
             raise TypeError("Expression not indexable")
         
@@ -128,7 +185,7 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
         func_sign: FuncDef = ctx.get_type(expr.called)
         return func_sign.type_
     else:
-        # print(f"Can't infer type of expression {expr}")
+        print(f"Can't infer type of expression {expr}")
         return ctx.get_type(expr)
 
 
@@ -184,7 +241,7 @@ def verify(ctx:Context, node):
             raise TypeError(f"Variable {node.name} already defined in current context")
         
         inf_ty = infer_type(ctx, node.value)
-        print(f"var_def: {node.name} = {inf_ty}, expected {node.type_}")
+        # print(f"var_def: {node.name} = {inf_ty}, expected {node.type_}")
         if is_subtype(ctx, inf_ty, node.type_):
             ctx.set_type(node.name, node.type_)
         else:
@@ -241,7 +298,7 @@ def verify(ctx:Context, node):
             
             for act, exp in zip(node.args, fd.params.args):
                 if not is_subtype(ctx, infer_type(ctx, act),  exp.type_):
-                    print(f"Error checking: {act}::{exp}")
+                    # print(f"Error checking: {act}::{exp}")
                     raise TypeError(f"Type mismatch: Expected {exp.type_.__class__.__name__} but got {infer_type(ctx, act)}", meta=node.meta)
         else:
             raise TypeError(f"Function {node.called} not defined.")

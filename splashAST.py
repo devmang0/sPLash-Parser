@@ -215,6 +215,27 @@ class Add(_Statement):
 
 
 @dataclass
+class Sub(_Statement):
+    l_expr: Expression
+    r_expr: Expression
+
+@dataclass
+class Mul(_Statement):
+    l_expr: Expression
+    r_expr: Expression
+
+@dataclass
+class Div(_Statement):
+    l_expr: Expression
+    r_expr: Expression
+
+
+@dataclass
+class Mod(_Statement):
+    l_expr: Expression
+    r_expr: Expression
+
+@dataclass
 class IfThenElse(_Statement):
     test: Test
     then_do: Block
