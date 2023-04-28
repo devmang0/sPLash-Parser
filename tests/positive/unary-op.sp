@@ -1,9 +1,9 @@
 
-bVal:Bool = false;
+bVal:Bool = False;
 
 
 (* silly example for testing purposes *)
-alwaysTrue:Bool( a:Bool where a!=false ){
+alwaysTrue:Bool( a:Bool where a!=False ){
 
     return !a;
 }

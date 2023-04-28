@@ -7,4 +7,8 @@
 
 *)
 
+print:Void(str:String){
+
+}
+
 print("Hello World");

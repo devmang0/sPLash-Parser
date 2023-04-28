@@ -12,9 +12,13 @@ program: statement*
 
 ?expression: neg
            | func_call
-
           
 ?neg: sum
+
+
+?logop: sum
+      | logop "&&" sum -> and
+      | logop "||" sum -> or
           
 ?sum: prod
     | sum "+" prod -> add
@@ -44,7 +48,7 @@ program: statement*
 
 ?test: comparison
      | var
-     | comparison LOG_OP test
+     | comparison logops test
 
 func_call: NAME"("(expression (("," expression )*)?)?")"
 
@@ -80,10 +84,12 @@ index_access: [NAME|func_call|index_access] "["expression"]"
       | "["type_"]" -> array
 
 
+logops: AND | OR
 
 
 // Special declarations of terminals not in common.lark
-LOG_OP: "&&" | "||"  
+AND: "&&" 
+OR: "||"  
 ADD_OP:  "+" | "-" 
 MUL_OP: "*"  | "/"  | "%"
 CMP_OP: "==" | "!=" | ">=" | ">" | "<" | "<="

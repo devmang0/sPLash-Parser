@@ -28,8 +28,12 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
 
 main:Void(){
 
-    sum:Double = sum(xs);
+    test:Bool = False;
+
+    sum:Int = sum(xs);
     x:[[Int]] = arrArrARR[0];
-    y:[Int] = arrArrARR[0][0];
+    y:[Int] = arrArrARR[1][0];
+
+    (*z:Int = test;*)
 
 }

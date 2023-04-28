@@ -114,11 +114,11 @@ class Block(_Node, ast_utils.AsList):
     statements: List[_Statement] = None
 
 
-@dataclass
-class Declaration(_Statement):
-        type_ : BasicType
-        name : str 
-        refinements : List[Refinement] = None
+# @dataclass
+# class Declaration(_Statement):
+#         type_ : BasicType
+#         name : str 
+#         refinements : List[Refinement] = None
 
 # @dataclass
 # class Definition(_Statement):
@@ -146,7 +146,7 @@ class VarDef(_Statement, ast_utils.WithMeta):
     meta:Meta
     name:str
     type_:_Ty
-    value:str
+    value:Expression
 
     # @v_args(inline=True)
     # def __init__(self, *args):
@@ -159,7 +159,7 @@ class VarDec(_Statement):
 
 @dataclass
 class IndexAccess(_Statement):
-    name: str
+    indexed: Any
     index: Int
 
 
@@ -253,8 +253,12 @@ class toAST(Transformer):
     def NAME(self, n):
         return n.value
 
-    def BOOL(self, b):
-        return Literal(type_=Bool(), val=bool(b.value.lower()))
+    def false(self, b):
+        # print("BOOL", b)
+        return Literal(type_=Bool(), val=False)
+
+    def true(self, b):
+        return Literal(type_=Bool(), val=True)
 
     def STRING(self, s):
         return Literal(type_=String(), val=s[1:-1])
@@ -288,4 +292,4 @@ class jsonAST(json.JSONEncoder):
         # Removing duplicates fields such as 
         # refinement:{ refinement: {cond:}} could be done, 
         # for representation purposes, but not needed for now
-        return { o.__class__.__name__.lower() : { k:v for k, v in o.__dict__.items() if v != None }}
+        return { o.__class__.__name__.lower() : { k:v for k, v in o.__dict__.items() if v != None and not isinstance(v, Meta) }}

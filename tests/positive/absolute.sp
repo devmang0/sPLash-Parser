@@ -1,4 +1,13 @@
 
+intToStr:String(int:Int){
+    (* Since there are no "native" functions to to the cast *)
+}
+
+print:Void(s:String){
+    (* should print to stdout *)
+}
+
+
 abs:Int where abs >= 0 ( a:Int ){
     if a < 0 {
         return -a;
@@ -8,7 +17,7 @@ abs:Int where abs >= 0 ( a:Int ){
 
 main:Void(){
 
-    print( abs("NotAnInt!") );
+    print( intToStr(abs(12)) );
 
 } 
 
