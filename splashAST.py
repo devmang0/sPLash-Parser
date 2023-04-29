@@ -190,50 +190,76 @@ class FuncDef(_Statement):
     params: FuncArgs = None
     block: Block = None    
 
-    # def __init__(self, *args):
-    #     print("ARGS: |", args, "|")
-        
-
 # ==================== BASIC OPERATIONS ====================
 
 # === UNARY === 
 @dataclass
-class Not(_Statement):
+class Not(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     expr: Expression
 
 @dataclass
-class Neg(_Statement):
+class Neg(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     # op:str
     expr: Expression
 
 # === BINARY ===
 
 @dataclass
-class Add(_Statement):
+class Add(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     l_expr: Expression
     r_expr: Expression
 
 
 @dataclass
-class Sub(_Statement):
+class Sub(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     l_expr: Expression
     r_expr: Expression
 
 @dataclass
-class Mul(_Statement):
+class Mul(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     l_expr: Expression
     r_expr: Expression
 
 @dataclass
-class Div(_Statement):
+class Div(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     l_expr: Expression
     r_expr: Expression
 
 
 @dataclass
-class Mod(_Statement):
+class Mod(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
     l_expr: Expression
     r_expr: Expression
+
+@dataclass
+class And(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
+    l_expr: Expression
+    r_expr: Expression
+
+@dataclass
+class Or(_Statement, ast_utils.WithMeta):
+    
+    meta: Meta
+    l_expr: Expression
+    r_expr: Expression
+
+
 
 @dataclass
 class IfThenElse(_Statement):

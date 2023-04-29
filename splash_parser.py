@@ -1,5 +1,8 @@
 import sys
-import os
+
+import logging
+from lark import Lark, logger
+
 import argparse
 import json
 
@@ -14,21 +17,21 @@ this_module = sys.modules[__name__]
 
 # Dealing with flags and arguments
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--parsetree",   help="print CST pretty", action="store_true")
-argparser.add_argument("--rawast",      help="Raw AST representation", action="store_true")
-argparser.add_argument("--tree",        help="AST as json", action="store_true")
-argparser.add_argument("--typecheck",   help="Typecheck the program", action="store_true")
+argparser.add_argument("--parsetree", help="print CST pretty", action="store_true")
+argparser.add_argument("--rawast", help="Raw AST representation", action="store_true")
+argparser.add_argument("--tree", help="AST as json", action="store_true")
+argparser.add_argument("--typecheck", help="Typecheck the program", action="store_true")
 
 argparser.add_argument("file", help="file to parse")
 argsp = argparser.parse_args()
 
 
-
+logger.setLevel(logging.DEBUG)
 
 # Parser
 
-with open("grammars/sPLash.lark") as _grammar:
-    grammar = _grammar.read()
+with open("grammars/sPLash-v2.lark") as grammar_file:
+    grammar = grammar_file.read()
 
 comments = []
 
@@ -38,6 +41,7 @@ _parser = Lark(grammar,
                lexer_callbacks={"COMMENT": comments.append}, keep_all_tokens=False,
                maybe_placeholders=True,
                propagate_positions=True,
+               debug=True
                )
 parse = _parser.parse
 
