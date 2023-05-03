@@ -73,7 +73,7 @@ class Context():
 def is_subtype(ctx:Context, this, that ):
 
 
-    print("\nis subtype was changed to accommodate liquid types\n")
+    # print("\nis subtype was changed to accommodate liquid types\n")
 
     # print("This class:", this[0].__class__)
     # print("That class:", that[0].__class__)
@@ -228,7 +228,16 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
 def verify(ctx:Context, node):
     
     if isinstance(node, Program):
+
+        remaining:list = []
+
         for st in node.statements:
+            if isinstance(st, (FuncDef, FuncDec, VarDef, VarDec)):
+                verify(ctx, st)
+            else:
+                remaining.append(st)
+
+        for st in remaining:
             verify(ctx, st)
     
     elif isinstance(node, FuncDef):
@@ -263,7 +272,7 @@ def verify(ctx:Context, node):
             ctx.exit_scope()
     
     elif isinstance(node, Comparison):
-        print(verify(ctx, node.l_expr), verify(ctx, node.r_expr))
+        # print(verify(ctx, node.l_expr), verify(ctx, node.r_expr))
         if infer_type(ctx, node.l_expr)[0] != infer_type(ctx, node.r_expr)[0]:
             raise TypeCheckingError(f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
         return Bool
@@ -293,13 +302,13 @@ def verify(ctx:Context, node):
     elif isinstance(node, Return):
 
         expected = ctx.get_type(RETURN)
-        # if node.value != None:
-        #     actual = infer_type(ctx, node.value)
-        # else:
-        #     actual = Void()
-        expr_type = infer_type(ctx, node.value)
+        expr_type = None
+        if node.value != None:
+            expr_type = infer_type(ctx, node.value)
+        else:
+            expr_type = (Void(), None)
         if not is_subtype(ctx, expr_type , expected):
-            raise TypeCheckingError(f"Invalid Return Type: Expected {expected.__class__.__name__} but got {actual.__class__.__name__}", meta=node.meta)
+            raise TypeCheckingError(f"Invalid Return Type: Expected {expected[0].__class__.__name__} but got {expr_type[0].__class__.__name__}", meta=node.meta)
 
     elif isinstance(node, VarDec):
 
@@ -328,13 +337,12 @@ def verify(ctx:Context, node):
             # print("Found", node.called, "in context")
 
             func_type, func_refinement, *args = ctx.get_type(node.called)
-            print(args)
+            # print(args)
 
             if len(args) != len(node.args) :
                 raise TypeCheckingError(f"Unexpected number of arguments for function {node.called}", meta=node.meta)
             
             for act, exp in zip(node.args, args):
-                print("ARGS COMP:", act, exp)
                 if not is_subtype(ctx, infer_type(ctx, act),  (exp.type_, exp.refinement)):
                     # print(f"Error checking: {act}::{exp}")
                     raise TypeCheckingError(f"Type mismatch: Expected {exp.type_.__class__.__name__} but got {infer_type(ctx, act)}", meta=node.meta)
@@ -358,5 +366,3 @@ def verify(ctx:Context, node):
 
     else:
         print(f"Don't know how to handle {node.__class__.__name__}:{node}")
-
-    # print("Last Context: ", json.dumps(ctx.stack, indent=4, cls=jsonAST))

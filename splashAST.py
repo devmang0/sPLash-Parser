@@ -190,6 +190,16 @@ class FuncDef(_Statement):
     params: FuncArgs = None
     block: Block = None    
 
+
+@dataclass
+class FuncDec(_Statement):
+
+    name: str = ""
+    type_: str = "Void"
+    refinement: Refinement = None
+    params: FuncArgs = None
+
+
 # ==================== BASIC OPERATIONS ====================
 
 # === UNARY === 

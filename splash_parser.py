@@ -30,7 +30,7 @@ logger.setLevel(logging.DEBUG)
 
 # Parser
 
-with open("grammars/sPLash-v2.lark") as grammar_file:
+with open("grammars/sPLash.lark") as grammar_file:
     grammar = grammar_file.read()
 
 comments = []
@@ -41,7 +41,7 @@ _parser = Lark(grammar,
                lexer_callbacks={"COMMENT": comments.append}, keep_all_tokens=False,
                maybe_placeholders=True,
                propagate_positions=True,
-               debug=True
+            #    debug=True
                )
 parse = _parser.parse
 
