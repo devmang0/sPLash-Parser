@@ -9,12 +9,11 @@ from lark.tree import Meta
 from dataclasses import dataclass
 from typing import List
 
-t_int = "Int"
-t_double = "Double"
-# t_float = "Float"
-t_string = "String"
-t_bool = "Bool"
-t_void = "Void"
+# As part of trying to make the AST Code more readable as well as
+# improving maintainability, we ditch classes that were suposed to native types
+# Thus reducing unnecessary locs 
+
+
 
 
 # ====== AST NODES ======
@@ -24,7 +23,7 @@ class _Node(ast_utils.Ast):
     pass
 
 @dataclass
-class _Ty(_Node):
+class _Ty():
     pass
 
 @dataclass
@@ -33,30 +32,22 @@ class Array(_Ty):
 
 @dataclass
 class BasicType(_Ty):
-    pass
+    ty_name:str
 
-@dataclass
-class Numeric(BasicType):
-    pass
+    def __repr__(self) -> str:
+        return f"{{{self.ty_name}}}"
 
-@dataclass
-class Int(Numeric):
-    pass
+    def __eq__(self, other) -> bool:
+        return isinstance(other, BasicType) and self.name == other.name
 
-@dataclass
-class Double(Numeric):
-    pass
 
-@dataclass
-class Bool(BasicType):
-    pass
+# "Satic" Instances of Native types
+t_int    = BasicType("Int")
+t_double = BasicType("Double")
+t_string = BasicType("String")
+t_bool   = BasicType("Bool" )
+t_void   = BasicType("Void")
 
-@dataclass
-class String(BasicType):
-    pass
-
-class Void(BasicType):
-    pass
 
 
 @dataclass
@@ -160,7 +151,7 @@ class VarDec(_Statement):
 @dataclass
 class IndexAccess(_Statement):
     indexed: Any
-    index: Int
+    index: Any # Must be checked to be an Int
 
 
 @dataclass
@@ -297,12 +288,11 @@ class Var(_Node):
 class toAST(Transformer):
 
     type_dict = {
-        "int" : Int,
-        "double": Double,
-        "float": Double,
-        "bool": Bool,
-        "string": String,
-        "void": Void
+        "int" : t_int,
+        "double": t_double,
+        "bool": t_bool,
+        "string": t_string,
+        "void": t_void
     }
 
 
@@ -312,27 +302,28 @@ class toAST(Transformer):
 
     def false(self, b):
         # print("BOOL", b)
-        return Literal(type_=Bool(), val=False)
+        return t_bool
 
     def true(self, b):
-        return Literal(type_=Bool(), val=True)
+        return t_bool
 
     def STRING(self, s):
-        return Literal(type_=String(), val=s[1:-1])
+        return t_string
     
     def INT(self, i):
-        return Literal(type_=Int(), val=int(i))
+        return t_int
         
     def DOUBLE(self, d):
-        return Literal(type_=Double(), val=float(d))
+        return t_double
     
     def VOID(self, d):
-        return Literal(type_=Void())
+        return Literal(type_=t_void)
 
     def TYPE(self, t):
         
+        print("Parsing type:", t)
         if t.value.lower() in self.type_dict:
-            return self.type_dict[t.value.lower()]()
+            return self.type_dict[t.value.lower()]
 
         return BasicType(t.value)
 
@@ -350,3 +341,33 @@ class jsonAST(json.JSONEncoder):
         # refinement:{ refinement: {cond:}} could be done, 
         # for representation purposes, but not needed for now
         return { o.__class__.__name__.lower() : { k:v for k, v in o.__dict__.items() if v != None and not isinstance(v, Meta) }}
+    
+
+
+
+
+# Part of trying to clean up some code, better to embrace
+# Too much boilerplate with no actual benefit
+
+# @dataclass
+# class Numeric(BasicType):
+#     pass
+
+# @dataclass
+# class Int(Numeric):
+#     pass
+
+# @dataclass
+# class Double(Numeric):
+#     pass
+
+# @dataclass
+# class Bool(BasicType):
+#     pass
+
+# @dataclass
+# class String(BasicType):
+#     pass
+
+# class Void(BasicType):
+#     pass

@@ -3,7 +3,7 @@ from lark.tree import Meta
 from splashAST import *
 from splashAST import _Ty, _Node
 
-from liquidtypes import transformRefinement, liquid_type_check
+from typechecking.liquid import transformRefinement, liquid_type_check
 
 from enum import Enum
 

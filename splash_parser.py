@@ -10,7 +10,7 @@ from lark import Lark, Transformer, v_args
 from lark import ast_utils
 
 from splashAST import *
-from typechecking.context import Context
+from typechecking.context import Context, verify
 
 this_module = sys.modules[__name__]
 
