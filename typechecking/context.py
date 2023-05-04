@@ -24,7 +24,7 @@ class TypeCheckingError(Exception):
         if not meta :
             super().__init__(message)
         else:
-            super().__init__(message, Errors.MetaInfo.value.format(meta.line, meta.column, meta.end_line, meta.end_column))
+            super().__init__(message+Errors.MetaInfo.value.format(meta.line, meta.column, meta.end_line, meta.end_column))
 
 
 
@@ -37,7 +37,10 @@ class Context():
 
     """
 
-    stack = [{}]
+    stack = None
+
+    def __init__(self):
+        self.stack = [{}]
 
     def get_type(self, name:str):
 
@@ -203,7 +206,7 @@ def infer_type(ctx:Context, expr:Expression) -> _Ty:
         
         indexing_type = infer_type(ctx, expr.index)
         if not is_subtype(ctx, indexing_type, (Int(), None)):
-            raise TypeCheckingError(Errors.Unexpected.value.format("Type", class_name(Int) , class_name(indexing_type)))
+            raise TypeCheckingError(Errors.Unexpected.value.format("Type", class_name(Int()) , class_name(indexing_type[0])))
 
         return (indexed_exp_type[0].innerType, None)
         
@@ -313,7 +316,7 @@ def verify(ctx:Context, node):
     elif isinstance(node, VarDec):
 
         if ctx.is_var_in_current_scope(node.name):
-            raise TypeCheckingError(f"Variable already declared in current context")
+            raise TypeCheckingError(f"Variable {node.name}:{node.type_} already declared in current context")
         ctx.set_type(node.name, (node.type_, None))
 
     elif isinstance(node, SetVal):

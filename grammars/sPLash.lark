@@ -11,7 +11,7 @@ program: statement*
 
 
 ?expression: or_test
-           | func_call
+        //    | func_call
 
 ?or_test: and_test 
         | or_test "||" and_test -> or
@@ -23,7 +23,7 @@ program: statement*
          | "!" not_test -> not
           
 ?comparison: sum 
-           | (sum CMP_OP sum)? -> comparison
+           | sum CMP_OP sum -> comparison
           
 ?sum: prod
     | sum "+" prod -> add
@@ -34,7 +34,7 @@ program: statement*
      | prod "/" atom -> div
      | prod "%" atom -> mod 
 
-?factor: atom
+?factor: atom_expr
        | "-" factor -> neg
 
 
@@ -73,6 +73,10 @@ block: "{" statement* "}"
 var: NAME
 _binder: NAME":"type_ 
 
+
+?atom_expr: func_call
+          | atom
+
 ?atom: INT
      | DOUBLE
      | "False" -> false
@@ -93,8 +97,6 @@ index_access: [NAME|func_call|index_access] "["expression"]"
 // Special declarations of terminals not in common.lark
 OR_OP: "||"
 AND_OP: "&&"
-ADD_OP:  "+" | "-" 
-MUL_OP: "*"  | "/"  | "%"
 CMP_OP: "==" | "!=" | ">=" | ">" | "<" | "<="
 NOT_OP: "!" 
 NEG_OP: "-"

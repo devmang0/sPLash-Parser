@@ -3,14 +3,14 @@
 from splashAST import *
 
 
-
 def transformRefinement(op, type_, refinement = None):
 
     if refinement == None:
         return (type_, refinement)
-    print(op)
+
     if op == Neg:
-        print(f" {{x:{type_}<{refinement}}}")
+        # print(f" {{x:{type_}<{refinement}}}")
+        pass
     else:
         print("don't know how to transform refinement")
 

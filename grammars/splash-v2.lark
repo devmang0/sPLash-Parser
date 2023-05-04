@@ -72,7 +72,7 @@ var: NAME
 _binder: NAME":"type_ 
 
 ?atom_expr: func_call
-         | atom
+          | atom
 
 ?atom: INT
      | DOUBLE
@@ -94,8 +94,6 @@ index_access: [NAME|func_call|index_access] "["expression"]"
 // Special declarations of terminals not in common.lark
 OR_OP: "||"
 AND_OP: "&&"
-// ADD_OP:  "+" | "-" 
-// MUL_OP: "*"  | "/"  | "%"
 CMP_OP: "==" | "!=" | ">=" | ">" | "<" | "<="
 NOT_OP: "!" 
 NEG_OP: "-"

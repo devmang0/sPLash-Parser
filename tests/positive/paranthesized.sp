@@ -2,4 +2,4 @@ x:Bool = (False) && (True || False);
 
 xs:[Int];
 
-i:Int = xs[x];
+i:Int = xs[0];
