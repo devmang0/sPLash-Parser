@@ -7,6 +7,7 @@ print:Void(s:String){
     (* should print to stdout *)
 }
 
+a:Int = 0;
 
 abs:Int where abs >= 0 ( a:Int ){
     if a < 0 {

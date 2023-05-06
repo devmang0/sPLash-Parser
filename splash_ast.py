@@ -27,7 +27,7 @@ class _Ty():
     pass
 
 @dataclass
-class Array(_Ty):
+class Array(_Ty, _Node):
     innerType: _Ty
 
 @dataclass
@@ -38,7 +38,7 @@ class BasicType(_Ty):
         return f"{{{self.ty_name}}}"
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, BasicType) and self.name == other.name
+        return isinstance(other, BasicType) and self.ty_name == other.ty_name
 
 
 # "Satic" Instances of Native types
@@ -200,12 +200,18 @@ class Not(_Statement, ast_utils.WithMeta):
     meta: Meta
     expr: Expression
 
+    def __repr__(self) -> str:
+        return "Not (!)"
+
 @dataclass
 class Neg(_Statement, ast_utils.WithMeta):
     
     meta: Meta
     # op:str
     expr: Expression
+    
+    def __repr__(self) -> str:
+        return "Unary Minus (-)"
 
 # === BINARY ===
 
@@ -216,6 +222,9 @@ class Add(_Statement, ast_utils.WithMeta):
     l_expr: Expression
     r_expr: Expression
 
+    def __repr__(self) -> str:
+        return "Binary Plus (+)"
+
 
 @dataclass
 class Sub(_Statement, ast_utils.WithMeta):
@@ -224,12 +233,18 @@ class Sub(_Statement, ast_utils.WithMeta):
     l_expr: Expression
     r_expr: Expression
 
+    def __repr__(self) -> str:
+        return "Binary Minus (+)"
+
 @dataclass
 class Mul(_Statement, ast_utils.WithMeta):
     
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+
+    def __repr__(self) -> str:
+        return "Multiplication (*)"
 
 @dataclass
 class Div(_Statement, ast_utils.WithMeta):
@@ -238,6 +253,8 @@ class Div(_Statement, ast_utils.WithMeta):
     l_expr: Expression
     r_expr: Expression
 
+    def __repr__(self) -> str:
+        return "Division (/)"
 
 @dataclass
 class Mod(_Statement, ast_utils.WithMeta):
@@ -246,12 +263,22 @@ class Mod(_Statement, ast_utils.WithMeta):
     l_expr: Expression
     r_expr: Expression
 
+    def __repr__(self) -> str:
+        return "Modulo (%)"
+
+
+
 @dataclass
 class And(_Statement, ast_utils.WithMeta):
     
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+
+    def __repr__(self) -> str:
+        return "And (&&)"
+
+
 
 @dataclass
 class Or(_Statement, ast_utils.WithMeta):
@@ -260,6 +287,8 @@ class Or(_Statement, ast_utils.WithMeta):
     l_expr: Expression
     r_expr: Expression
 
+    def __repr__(self) -> str:
+        return "Or (&&)"
 
 
 @dataclass
@@ -300,28 +329,27 @@ class toAST(Transformer):
     def NAME(self, n):
         return n.value
 
-    def false(self, b):
-        # print("BOOL", b)
-        return t_bool
+    def false(self, b): # BOOL Terminal was not getting parsed correctly
+        return Literal(type_=t_bool, val=False)
 
-    def true(self, b):
-        return t_bool
+    def true(self, b): # Same as False
+        return Literal(type_=t_bool, val=True)
 
     def STRING(self, s):
-        return t_string
+        return Literal(type_=t_string, val=s.value)
     
     def INT(self, i):
-        return t_int
+        return Literal(type_=t_int, val=int(i.value))
         
     def DOUBLE(self, d):
-        return t_double
+        return Literal(type_=t_double, val=float(d.value))
     
     def VOID(self, d):
         return Literal(type_=t_void)
 
+
     def TYPE(self, t):
         
-        print("Parsing type:", t)
         if t.value.lower() in self.type_dict:
             return self.type_dict[t.value.lower()]
 

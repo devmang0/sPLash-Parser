@@ -9,8 +9,9 @@ import json
 from lark import Lark, Transformer, v_args
 from lark import ast_utils
 
-from splashAST import *
-from typechecking.context import Context, verify
+from splash_ast import *
+from typechecking.context import Context
+from typechecking.typecheck import verify
 
 this_module = sys.modules[__name__]
 
