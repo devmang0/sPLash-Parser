@@ -1,10 +1,14 @@
 
 # TODO List
 
+## LLVM and Clang Version mismatch
+
+For example, compiling the [hello world](llvm-gen/example-hw.c) with clang v.17, produces an untyped pointer, which is not supported by versions of LLVM prior to 15. So the question is, what is the target llvm version?
+
+
 ## Rewriting for flexibility and maintenance
 
 For the sake of ease of maintenance, I am rewriting this project to be more flexible, and easier to maintain. This however highlighted bugs that previouslty weren't noticed, as well as some superfulus code that wasn't  
-
 
 ## Liquid Types
 

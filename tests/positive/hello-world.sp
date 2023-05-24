@@ -3,14 +3,9 @@
 greeting:String = "Hello";
 
 
-print:Void(str:String){
-    (* printf("%s", str); *)
-}
-
-
 main:Void(){
 
-    print( greeting + "World!");
+    print("%s World!\n", greeting);
     return;
     
 }

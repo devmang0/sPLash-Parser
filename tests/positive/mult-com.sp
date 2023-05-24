@@ -6,9 +6,6 @@
 
 
 *)
-
-print:Void(str:String){
-
+main:Void(){
+    print("Hello World");
 }
-
-print("Hello World");

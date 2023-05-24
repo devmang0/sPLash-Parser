@@ -1,5 +1,12 @@
 from dataclasses import dataclass
-
+from splash_ast import (
+    t_void,
+    t_bool,
+    t_string,
+    t_int,
+    t_double,
+    Arg,
+)
 
 class ContextException(Exception):
 
@@ -49,3 +56,13 @@ class Context():
     def exit_scope(self):
         self.stack.pop()
 
+
+
+def load_native_functions(ctx:Context) -> None:
+    ctx.set_type( "print", (t_void, 
+                                [Arg(meta=None, 
+                                    name="string", 
+                                    type_=t_string
+                                    )]
+                            )
+                )

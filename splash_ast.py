@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from typing import List, Any, Union
 
 from lark  import Lark, ast_utils, Transformer, v_args
@@ -23,16 +24,29 @@ class _Node(ast_utils.Ast):
     pass
 
 @dataclass
-class _Ty():
+class _Ty(ABC):
     pass
+
+    @abstractmethod
+    def get_name(self):
+        ...
 
 @dataclass
 class Array(_Ty, _Node):
     innerType: _Ty
 
+    def get_name(self):
+        return "["+self.innerType.get_name()+"]"
+    
+    def __repr__(self) -> str:
+        return "{"+self.get_name()+"}"
+
 @dataclass
 class BasicType(_Ty):
     ty_name:str
+
+    def get_name(self):
+        return self.ty_name
 
     def __repr__(self) -> str:
         return f"{{{self.ty_name}}}"
@@ -92,6 +106,7 @@ class Comparison(_Node):
     l_expr : Expression
     op: str
     r_expr : Expression
+    types: tuple = None
 
 
 
@@ -164,6 +179,7 @@ class FuncCall(Expression, ast_utils.WithMeta):
     meta: Meta
     called: str
     args: List[Expression]
+    args_tys: List[_Ty] = None
 
     def __init__(self, *params):
         self.meta = params[0]
@@ -221,6 +237,7 @@ class Add(_Statement, ast_utils.WithMeta):
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+    final_ty: _Ty = None
 
     def __repr__(self) -> str:
         return "Binary Plus (+)"
@@ -232,6 +249,8 @@ class Sub(_Statement, ast_utils.WithMeta):
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+    final_ty: _Ty = None
+
 
     def __repr__(self) -> str:
         return "Binary Minus (+)"
@@ -242,6 +261,8 @@ class Mul(_Statement, ast_utils.WithMeta):
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+    final_ty: _Ty = None
+
 
     def __repr__(self) -> str:
         return "Multiplication (*)"
@@ -252,6 +273,8 @@ class Div(_Statement, ast_utils.WithMeta):
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+    final_ty: _Ty = None
+
 
     def __repr__(self) -> str:
         return "Division (/)"
@@ -262,6 +285,8 @@ class Mod(_Statement, ast_utils.WithMeta):
     meta: Meta
     l_expr: Expression
     r_expr: Expression
+    final_ty: _Ty = None
+
 
     def __repr__(self) -> str:
         return "Modulo (%)"
@@ -310,6 +335,7 @@ class Return(_Statement, ast_utils.WithMeta):
 @dataclass
 class Var(_Node):
     name:str
+    type_:_Ty = None
     # value:Any
 
 

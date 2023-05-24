@@ -1,7 +1,5 @@
 from enum import Enum
 from lark.tree import Meta
-import json
-
 
 from typechecking.context import Context
 
@@ -107,10 +105,12 @@ def infer_type(ctx: Context, expr: Expression) -> _Ty:
         return infer_type(ctx, expr.expr)
 
     elif isinstance(expr, (Add, Sub, Mul, Div, Mod)):
+
         l_ty = infer_type(ctx, expr.l_expr)
         r_ty = infer_type(ctx, expr.r_expr)
 
         if l_ty == t_string or r_ty == t_string:
+            expr.final_ty = t_string
             return t_string
 
         forbidden = (t_bool, t_void)
@@ -120,8 +120,11 @@ def infer_type(ctx: Context, expr: Expression) -> _Ty:
                 expr, l_ty, r_ty), meta=expr.meta)
 
         if l_ty == t_double or r_ty == t_double:
+
+            expr.final_ty = t_double
             return t_double
         else:
+            expr.final_ty = t_int
             return t_int
 
     elif isinstance(expr, (And, Or)):
@@ -152,7 +155,9 @@ def infer_type(ctx: Context, expr: Expression) -> _Ty:
     #     return (expr.type_, None)
 
     elif isinstance(expr, Var):
-        return ctx.get_type(expr.name)
+        var_ty = ctx.get_type(expr.name)
+        expr.type_ = var_ty
+        return var_ty
 
     elif isinstance(expr, FuncCall):
         return ctx.get_type(expr.called)
@@ -227,31 +232,32 @@ def verify(ctx: Context, node):
         if not (verify(ctx, node.l_expr) == verify(ctx, node.r_expr)):
             raise TypeCheckingError(
                 f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
+        node.types = (verify(ctx, node.l_expr), verify(ctx, node.r_expr))
         return t_bool
 
     elif isinstance(node, Var):
         if not ctx.has_var(node.name):
             raise TypeCheckingError(
                 f"Variable {node.name} not defined in current context")
-        return ctx.get_type(node.name)
+        var_ty = ctx.get_type(node.name)
+        node.type_ = var_ty
+        return var_ty
 
     elif isinstance(node, VarDef):
         if ctx.is_var_in_current_scope(node.name):
             raise TypeCheckingError(
                 f"Variable {node.name} already defined in current context")
 
-        ver_ty = verify(ctx, node.value)
-
-        if is_subtype(ctx, ver_ty, node.type_):
-            ctx.set_type(node.name, node.type_)
+        var_ty = verify(ctx, node.value)
+        if is_subtype(ctx, var_ty, node.type_):
+            ctx.set_type(node.name, var_ty)
         else:
             raise TypeCheckingError(
-                f"Variable Type Mismatch: Variable was declared as {node.type_} but assigned a value of {ver_ty}")
+                f"Variable Type Mismatch: Variable was declared as {node.type_} but assigned a value of {var_ty}")
 
     elif isinstance(node, Neg):
         tmp = infer_type(ctx, node.expr)
-    
-        if (not tmp == t_int) or (not tmp == t_double) :
+        if (not tmp == t_int) and (not tmp == t_double) : # Not equals 
             raise TypeCheckingError(
                 f"Can't use unary minus on non-numeric types. Type used: {tmp}")
         return tmp
@@ -293,6 +299,13 @@ def verify(ctx: Context, node):
             # print("Found", node.called, "in context")
             func_type, *args = ctx.get_type(node.called)
             # print(args)
+            ver_arg = [ verify(ctx, arg) for arg in node.args ]
+            node.args_tys = ver_arg
+
+            if node.called == "print":
+                # print(f"[{node.called}]VER_ARGS:", ver_arg)
+                # print(f"[{node.called}]ARGS:", node.args)
+                return func_type
 
             if len(args) != len(node.args):
                 raise TypeCheckingError(Errors.Unexpected.value.format( f"number of arguments for function {node.called}", len(args), len(node.args)), meta=node.meta)
@@ -300,13 +313,7 @@ def verify(ctx: Context, node):
             for act, exp in zip(node.args, args):
                 
                 verified = verify(ctx, act)
-
-                # print("ACT     :", act, 
-                #     "\nINF_ARGS:", act_, 
-                #     "\nVER_ACT :", verified )
-
                 if not is_subtype(ctx, verified,  exp.type_):
-                    # print(f"Error checking: {act}::{exp}")
                     raise TypeCheckingError(Errors.Unexpected.value.format("Type", exp.type_, verified), meta=node.meta)
             
             return func_type
