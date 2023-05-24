@@ -18,6 +18,6 @@ done
 for i in $others
 do
     echo $i
-    python splash_parser.py $flags $i
+    python splash.py $flags $i
     echo ""
 done

@@ -205,7 +205,9 @@ def compiler(node, emt:Emitter=None, i=0):
                             emt < f"{pname} = dso_local global {ty} -{node.value.expr.val}, align 8"
                             return
                     ty = to_llir_type(node.type_)
-                    val, _ = compiler(node.value, emt)
+
+                    print("INVOKED: ", node.value)
+                    val, _ = compiler(node.value, emt, i)
                     emt < f"{pname} = dso_local global {ty} {val}, align 8"
                     return
 

@@ -30,6 +30,8 @@ main:                                   # @main
 	.size	main, .Lfunc_end1-main
 	.cfi_endproc
                                         # -- End function
+	.type	VarDecl,@object                 # @VarDecl
+	.comm	VarDecl,8,8
 	.type	test,@object                    # @test
 	.data
 	.globl	test

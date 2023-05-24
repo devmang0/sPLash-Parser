@@ -1,3 +1,4 @@
+@VarDecl = common dso_local global double zeroinitializer, align 8
 @test = dso_local global i64 -10, align 8
 @test2 = dso_local global double -71.34831460674157, align 8
 @.str.1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
