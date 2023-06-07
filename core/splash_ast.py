@@ -163,16 +163,9 @@ class VarDec(_Statement):
     name:str
     type_:_Ty
 
-@dataclass
-class IndexAccess(_Statement):
-    indexed: Any
-    index: Any # Must be checked to be an Int
 
 
-@dataclass
-class SetVal(_Statement):
-    varToSet: Union[str, IndexAccess]
-    value: Expression
+
 
 @dataclass
 class FuncCall(Expression, ast_utils.WithMeta):
@@ -338,6 +331,32 @@ class Var(_Node):
     type_:_Ty = None
     # value:Any
 
+
+@dataclass
+class IndexAccess(_Statement):
+    indexed: Var
+    index: Any  # Must be checked to be an Int
+    final_ty: _Ty = None
+
+
+@dataclass
+class SetVal(_Statement):
+    varToSet: Union[Var, IndexAccess]
+    value: Expression
+
+    def __init__(self, varToSet, value):
+        self.varToSet = varToSet
+        self.value = value
+
+@dataclass
+class ArrayDef(_Node, ast_utils.WithMeta):
+    meta:Meta
+    elems:List[Expression]
+    final_type: Array
+
+    def __init__(self, meta, *elems):
+        self.meta = meta
+        self.elems = list(elems)
 
 
 class toAST(Transformer):

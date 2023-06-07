@@ -9,7 +9,7 @@ import json
 from lark import Lark, Transformer, v_args
 from lark import ast_utils
 
-from splash_ast import *
+from core.splash_ast import *
 from typechecking.context import Context, load_native_functions
 from typechecking.typecheck import verify
 
@@ -31,12 +31,9 @@ argparser.add_argument("--llvm", help="outputs llvm file", action="store_true")
 argparser.add_argument("files", help="file(s) to parse", nargs='*', default= './positive/hello-world.sp')
 argsp = argparser.parse_args()
 
-
-logger.setLevel(logging.DEBUG)
-
 # Parser
 
-with open("grammars/sPLash.lark") as grammar_file:
+with open("core/grammars/sPLash.lark") as grammar_file:
     grammar = grammar_file.read()
 
 comments = []

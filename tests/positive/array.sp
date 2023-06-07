@@ -1,9 +1,7 @@
 xs:[Int];
 
-xs[3] = 4; 
-
 len:Int(a:[Int]){
-    (*Maybe implement the actual function?*)
+    return 5;
 }
 
 arrArrARR:[[[Int]]]; (* 3d Arrays *)
@@ -13,9 +11,12 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
     i:Int = 0;
     sum:Int = 0;
 
-    while i < len(xs) {
+    
+    max:Int = len(xs);
+    while i < max {
 
-        sum = sum + xs[counter];
+        print("#%d -> el: %d => curr sum: %d\n", i, xs[i], sum);
+        sum = sum + xs[i];
 
         i = i + 1;
     }
@@ -27,13 +28,6 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
 
 
 main:Void(){
-
-    test:Bool = False;
-
-    sum:Int = sum(xs);
-    x:[[Int]] = arrArrARR[0];
-    y:[Int] = arrArrARR[1][0];
-
-    (*z:Int = test;*)
-
+    sum_:Int = sum({1, 2, 3});
+    print("SUM: %d\n", sum_);
 }

@@ -1,7 +1,7 @@
 from emitter import Emitter
 from typechecking.context import Context
-from splash_ast import * 
-from splash_ast import _Ty
+from core.splash_ast import * 
+from core.splash_ast import _Ty
 from re import findall
 
 # Type translation
@@ -23,6 +23,7 @@ ot = {
     "div_int"   : "sdiv",
     "div_float" : "fdiv",
 }
+
 
 get_op = lambda op, tty : ot["_".join(map(str.lower, [op, tty]))]
 
@@ -61,6 +62,15 @@ arith_ops = lambda x: {
     "neg": "-",
 }[x.lower()]
 
+
+type_byte_size = {
+    "i1":1,
+    "i8*":1,
+    "i64":4,
+    "double":4,
+    "void":0
+}
+
 indent = lambda indent:" "*indent*4
 
 
@@ -77,7 +87,23 @@ def to_llir_type(typ: _Ty):
 
 
 
-def compose_constant(node:Expression, emt:Emitter):
+def build_static_array(xs:list) -> list:
+
+    if not xs:
+        return []
+
+    x = xs[0]
+
+    if isinstance(x, Literal):
+
+        return [f"{to_llir_type(x.type_)} {x.val}"]+build_static_array(xs[1:])
+
+    else:
+        return xs
+
+
+
+def constant_folding(node:Expression, emt:Emitter):
     """
     Evaluates if expression is a static assignment or not.
     If a static assignment is found, return it's evaluation.
@@ -86,8 +112,8 @@ def compose_constant(node:Expression, emt:Emitter):
 
     if isinstance(node, (Add, Sub, Mul, Mod, Div)):
         
-        lex, l_is_const = compose_constant(node.l_expr, emt)
-        rex, r_is_const = compose_constant(node.r_expr, emt)
+        lex, l_is_const = constant_folding(node.l_expr, emt)
+        rex, r_is_const = constant_folding(node.r_expr, emt)
         
         if l_is_const and r_is_const:
             return eval(f"({str(lex)}) {arith_ops(node.__class__.__name__)} ({str(rex)})"), True
@@ -96,7 +122,7 @@ def compose_constant(node:Expression, emt:Emitter):
 
     elif isinstance(node, Neg):
 
-        ex, is_const = compose_constant(node.expr, emt)
+        ex, is_const = constant_folding(node.expr, emt)
         if is_const:
             return -ex, True
 
@@ -111,9 +137,14 @@ def compose_constant(node:Expression, emt:Emitter):
         return "", False
 
 
-
+def load_ptr(emt:Emitter, p_name:str, ty:str, i:int=0):
+    
+    p_tmp = "%"+emt.get_id()
+    emt << indent(i)+f"{p_tmp} = load {ty}, {ty}* {p_name}, align 4"
+    return p_tmp
 
 def compiler(node, emt:Emitter=None, i=0):
+    
 
     if isinstance(node, Program):
         emt = Emitter()
@@ -130,7 +161,7 @@ def compiler(node, emt:Emitter=None, i=0):
                 compiler(stmt, emt, i)
             elif isinstance(stmt, VarDef):
                 v_defs.append(stmt)
-            elif isinstance(stmt, (VarDef, FuncDef)):
+            elif isinstance(stmt, (FuncDef)):
                 f_defs.append(stmt)
 
             else:
@@ -157,8 +188,6 @@ def compiler(node, emt:Emitter=None, i=0):
         emt << f"define {f_ty} @{node.name}({compiler(node.params, emt)}){{"
         emt << "entry:"
 
-
-
         for stmt in node.block.statements:
             compiler(stmt, emt, i+1)
 
@@ -171,44 +200,42 @@ def compiler(node, emt:Emitter=None, i=0):
 
         args = []
         for arg in node.args:
-            pname = emt.get_pointer_name(arg.name)
-            pty = to_llir_type(arg.type_)
-            emt.set_var(arg.name, (pname, pty))
-            args.append(pty+" "+pname)
-            emt.set_type(pname, pty)
+            p_name = emt.get_pointer_name(arg.name)
+            p_ty = to_llir_type(arg.type_)
+            emt.set_var(arg.name, (p_name, p_ty))
+            args.append(p_ty+" "+p_name)
+            emt.set_type(p_name, p_ty)
 
         return ", ".join(args)
 
 
     elif isinstance(node, VarDef):
 
-        # emt.set_var(node.name, pname)
-
         if i == 0: # Global var
             # print("VARDEF: ", node)
-            pname = f"@{node.name}"
-            emt.set_var(node.name, (pname, "ptr"))
+            p_name = f"@{node.name}"
+            emt.set_var(node.name, (p_name, "ptr"))
             
 
             if node.type_ in (t_int, t_double):
 
                 ty = to_llir_type(node.type_)
-                const, is_const = compose_constant(node.value, emt)
+                const, is_const = constant_folding(node.value, emt)
 
                 if is_const:
                     emt.set_const(node.name, const)
                     const = int(const) if ty == "i64" else float(const)
-                    emt < f"{pname} = dso_local global {ty} {const}, align 8"
+                    emt < f"{p_name} = dso_local global {ty} {const}, align 8"
 
                 else: 
                     if isinstance(node.value, Neg) and isinstance(node.value.expr, Literal):
-                            emt < f"{pname} = dso_local global {ty} -{node.value.expr.val}, align 8"
+                            emt < f"{p_name} = dso_local global {ty} -{node.value.expr.val}, align 8"
                             return
                     ty = to_llir_type(node.type_)
 
-                    print("INVOKED: ", node.value)
+                    # print("INVOKED: ", node.value)
                     val, _ = compiler(node.value, emt, i)
-                    emt < f"{pname} = dso_local global {ty} {val}, align 8"
+                    emt < f"{p_name} = dso_local global {ty} {val}, align 8"
                     return
 
             elif node.type_ == t_string:
@@ -219,43 +246,52 @@ def compiler(node, emt:Emitter=None, i=0):
                     parse_nl = node.value.val.replace("\\n", "\\0A")[:-1]+'\\00"'
                     emt < f'{const_name} = private unnamed_addr constant [{str_size} x i8] c{parse_nl}, align 1'
 
-                emt < f"{pname} = global ptr {const_name}, align 8"
+                emt < f"{p_name} = global ptr {const_name}, align 8"
             
             else:
                 const_name = f"@.{node.type_.get_name()}.{emt.get_id()}"
                 e1, t1 = compiler(node.value, emt, i+1)
                 reg = const_name+f" = private dso_local unnamed_addr constant c{e1}"
                 emt < f"{reg}"
-                emt < f"{pname} = global ptr {const_name}, align 8"
+                emt < f"{p_name} = global ptr {const_name}, align 8"
 
         else:
-            pname = emt.get_pointer_name(node.name)
+            
+            p_name = emt.get_pointer_name(node.name)
             p_ty = to_llir_type(node.type_) 
-            emt.set_var(node.name, pname)
-            emt << indent(i)+f"{pname} = alloca {to_llir_type(node.type_)}"
+
+
+            print("VAL_TO_SET:", node.value)
+            val, v_ty = compiler(node.value, emt, i+1)
+            emt.set_var(node.name, (p_name, "ptr"))
+            emt << indent(i)+f"{p_name} = alloca {to_llir_type(node.type_)}"
+            emt << indent(i)+f"store {v_ty} {str(val).lower()}, {p_ty}* {p_name}, align {type_byte_size.get(v_ty, '8')} ; var-def"
 
     elif isinstance(node, VarDec):
 
         if i == 0: # Global var
             reg = f"@{node.name}"
             ty = to_llir_type(node.type_)
+            emt.set_var(node.name, (reg, "ptr"))
             emt < f"{reg} = common dso_local global {ty} zeroinitializer, align 8"
 
 
     elif isinstance(node, Return):
         # TODO - how to process return value
-        print("RETURN NODE:", node)
+        # print("RETURN NODE:", node)
         e, ty = compiler(node.value, emt, 0)
         # ret_ty = t_int
         # print("Return:", e1, ret_ty)
+
+        if isinstance(e, str) and e.startswith("%ptr_"):
+            e = load_ptr(emt, e, ty, i)
+
         emt << indent(i)+f"ret {ty} {e}"
 
     elif isinstance(node, Literal):
 
 
         if node.type_ == t_string:
-            # print(f"SIZE of str [{node.val}]:", len(node.val[1:-1]))
-            # print(f"What I bet:", len(node.val[1:-1]) - len(findall(r'\\.', node.val)))
             str_size = (len(node.val[1:-1]) -
                         len(findall(r'\\.', node.val)))+1
             parse_nl = node.val.replace("\\n", "\\0A")[:-1]+'\\00"'
@@ -276,17 +312,29 @@ def compiler(node, emt:Emitter=None, i=0):
         f_args = [ compiler(a, emt, i) for a in node.args ]
         f_args_ty = [to_llir_type(f_arg) for f_arg in node.args_tys]
 
+
         # print(f"[{node.called}] f_args:   ", f_args)
         # print(f"[{node.called}] typ_check_time:", node.args_tys)
         # print(f"[{node.called}] f_args_ty:", f_args_ty)
 
         act_args =  []
         for arg, ty in f_args:  # zip(f_args_ty, f_args)
-            # if is_agregate_type(ty):
-            #     # Only works for strings
-            #     act_args.append(f"{ty} getelementptr inbounds ({ag_ty}, {ag_ty}* {arg}, i64 0, i64 0)")
 
-            # else:
+            if ty.startswith("["):
+                p_name = f"%{emt.get_id()}"
+                emt << indent(i) + f"{p_name} = getelementptr inbounds {ty}, {ty}* {arg}, i64 0, i64 0"
+                act_args.append(f"ptr {p_name}")
+                continue
+
+
+            if ty != "ptr":
+                p_name = f"%{emt.get_id()}"
+                
+                emt << indent(
+                    i)+f"{p_name} = load {ty}, {ty}* {arg}, align 8"
+                act_args.append(f"{ty} {p_name}")
+                continue
+
             act_args.append(f"{ty} {arg}")
             
 
@@ -299,10 +347,10 @@ def compiler(node, emt:Emitter=None, i=0):
 
     elif isinstance(node, IfThenElse):
 
-        if_id = emt.get_id()
-        lbl_then = "then_"+if_id
-        lbl_end = "end_"+if_id
-        lbl_else = "else_"+if_id
+        while_id = emt.get_id()
+        lbl_then = "then_"+while_id
+        lbl_end = "end_"+while_id
+        lbl_else = "else_"+while_id
 
         lbl_next = lbl_end if node.else_do == None else lbl_else
 
@@ -328,8 +376,13 @@ def compiler(node, emt:Emitter=None, i=0):
     elif isinstance(node, Comparison):
 
         cond_res = f"%{emt.get_id()}"
-        lex, _ = compiler(node.l_expr, emt, i)
-        rex, _ = compiler(node.r_expr, emt, i)
+        
+        lex, l_ty = compiler(node.l_expr, emt, i)
+        rex, r_ty = compiler(node.r_expr, emt, i)
+
+        lex = load_ptr(emt, lex, l_ty, i) if not isinstance(
+            lex, int) and lex.startswith("%ptr") else lex
+        rex = load_ptr(emt, rex, r_ty, i) if not isinstance(rex, int) and rex.startswith("%ptr") else rex
 
         # Since fcmp only works for floats and icmp only for ints, we must do some work
         l_ty, r_ty = node.types
@@ -348,22 +401,31 @@ def compiler(node, emt:Emitter=None, i=0):
         oper = icmp_ops[node.op] if ty == "i64" else fcmp_ops[node.op]
         emt << indent(i)+f"{cond_res} = {cmp_cmd} {oper} {ty} {lex}, {rex}"
         emt.set_var(cond_res, (cond_res, 'i1'))
-        return (cond_res, 'i1')
+
+
+        
+        return cond_res, 'i1'
 
     elif isinstance(node, (Add, Sub, Mul, Div, Mod)):
 
-        comp_const, is_const = compose_constant(node, emt)
+        comp_const, is_const = constant_folding(node, emt)
         if is_const:
             ty = to_llir_type(node.final_ty)
-            pname = f"@.{ty}.{emt.get_id()}"
+            p_name = f"@.{ty}.{emt.get_id()}"
             val = int(comp_const) if ty == "i64" else float(comp_const) 
-            emt < f"{pname} = dso_local global {ty} {val}"
-            return pname, ty
+            emt < f"{p_name} = dso_local global {ty} {val}"
+
+            emt.set_var(p_name, (p_name, "ptr"))
+
+            return p_name, ty
         else:
             lex, l_ty = compiler(node.l_expr, emt, i)
             rex, r_ty = compiler(node.r_expr, emt, i)
 
             rr = f"%{emt.get_id()}"
+
+            lex = load_ptr(emt, lex, l_ty, i) if not isinstance(lex, int) and lex.startswith("%ptr") else lex
+            rex = load_ptr(emt, rex, r_ty, i) if not isinstance(rex, int) and rex.startswith("%ptr") else rex
 
 
             # Must cast the int op from int to float
@@ -382,22 +444,21 @@ def compiler(node, emt:Emitter=None, i=0):
             if ty == "string":
                 # print(f"Trying to concat: {node.l_expr}, {node.r_expr} = {le, re}")
                 print(f"IGNORING STRING CONCAT FOR NOW")
-                return rr
+                return rr, "i8*"
 
             oper = get_op(node.__class__.__name__, ty)
             flags = ""
 
-            emt << indent(i)+f"{rr} = {oper} {flags} {ty} {lex} {rex}"
+            ty_ = to_llir_type(node.final_ty)
 
-            return rr, ty
+            emt << indent(i)+f"{rr} = {oper} {flags} {ty_} {lex}, {rex}"
+
+            return rr, ty_
 
     elif isinstance(node, (And, Or)):
 
         reg = f"%{emt.get_id()}"
         op = node.__class__.__name__.lower()
-
-        print("LEX:", node.l_expr)
-        print("REX:", node.r_expr)
 
         lex, lt = compiler(node.l_expr, emt, i)
         rex, rt = compiler(node.r_expr, emt, i)
@@ -419,22 +480,103 @@ def compiler(node, emt:Emitter=None, i=0):
         return reg, t 
 
     elif isinstance(node, Var):
-        emt.set_type(node.name, node.type_)
+
         var, ty = emt.get_var(node.name)
-        if not var.startswith("@"): 
-            return (var, ty)
-        p_name = f"%{emt.get_id()}"
+        if ty != "ptr": 
+            return var, ty
+        # p_name = f"%{emt.get_id()}"
+
         p_ty = to_llir_type(node.type_)
-        emt << indent(i)+f"{p_name} = load {p_ty}, {p_ty}* {var}, align 8"
-        emt.set_type(p_name, p_ty)
-        return (p_name, p_ty)
+        # emt << indent(i)+f"{p_name} = load {p_ty}, {p_ty}* {var}, align 8"
+        # emt.set_type(p_name, p_ty)
+        # emt.set_type(node.name, to_llir_type(node.type_))
+        return var, p_ty
 
     elif isinstance(node, str):
         if node == "print":
             node = "printf"
         return emt.get_type(node)
         
+    elif isinstance(node, IndexAccess):
 
+        indexed, indexed_ty = emt.get_var(node.indexed) \
+                        if isinstance(node.indexed, str) \
+                        else compiler(node.indexed, emt, i)
+
+        index, index_ty = compiler(node.index, emt, i)
+
+        # print(f"[{node.indexed}]Indexed: {indexed} {indexed_ty}")
+        print(f"[{node.indexed}]Index: {index} {index_ty}")
+
+
+        if not isinstance(index, int) and index.startswith("%ptr"):
+            ptr_tmp = "%"+emt.get_id()
+            emt << indent(i)+f"{ptr_tmp} = load {index_ty}, {index_ty}* {index}, align 4"
+            index = ptr_tmp
+
+
+        p_name = f"{emt.get_pointer_name(emt.get_id())}"
+        p_ty = to_llir_type(node.final_ty)
+        emt.set_var(p_name, (p_name, p_ty))
+        emt << indent(i)+f"{p_name} = getelementptr inbounds {indexed_ty}, {index_ty}* {indexed}, {index_ty} {index}" 
+
+        # reg = f"%{emt.get_id()}"
+        # emt << indent(i)+f"{reg} = load {p_ty}, {p_ty}* {p_name}, align {type_byte_size.get(p_ty, 'i8')}"
+
+        return p_name, p_ty
+
+
+    elif isinstance(node, While):
+
+        while_id = emt.get_id()
+        lbl_cmp = "while_cmp_"+while_id
+        lbl_do = "while_do_"+while_id
+        lbl_end = "while_end_"+while_id
+        
+        emt << indent(i)+f"br label %{lbl_cmp}"
+        emt << f"{lbl_cmp}:"
+        test, _ = compiler(node.condition, emt, i)
+        emt << indent(i)+f"br i1 {test}, label %{lbl_do}, label %{lbl_end}"
+        emt << f"{lbl_do}:"
+        
+        emt.enter_scope()
+        for st in node.block.statements:
+            compiler(st, emt, i+1)
+        emt.exit_scope()
+
+        emt << indent(i) + f"br label %{lbl_cmp}"
+
+        emt << f"{lbl_end}:"
+
+    elif isinstance(node, SetVal):
+
+        # print("[SET_VAL] ==>", node.value)
+        
+        var, var_ty = compiler(node.varToSet, emt, i)
+        print("[SET_VAL] ==>", node.varToSet, var, var_ty)
+        val, val_ty = compiler(node.value, emt, i)
+
+        emt << indent(i)+f"store {val_ty} {val}, {var_ty}* {var}, align 8"
+
+    elif isinstance(node, ArrayDef):
+
+        mempcpy = "@llvm.memcpy.p0i8.p0i8.i64"
+        emt.include_decl(mempcpy, f"declare void {mempcpy}(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1")
+
+        p_name = "%"+emt.get_id()
+        const_name = f"@.array.{p_name[1:]}.{len(node.elems)}"
+        inner_ty = to_llir_type(node.final_type)
+        arr_type = f"[{len(node.elems)} x {inner_ty}]"
+
+        arr_els = build_static_array(node.elems)
+        size = len(node.elems) * type_byte_size[inner_ty]
+
+        emt < f"{const_name} = private unnamed_addr constant {arr_type} [{', '.join(arr_els)}], align 16"
+        emt << indent(i)+f"{p_name} = alloca {arr_type}, align 16"
+        emt << indent(i)+f"{p_name}_tmp = bitcast {arr_type}* {p_name} to i8*"
+        emt << indent(i)+f"call void {mempcpy}(i8* align 16 {p_name}_tmp, i8* align 16 bitcast ({arr_type}* {const_name} to i8*), i64 {size}, i1 false)"
+
+        return p_name, arr_type
 
 
     else:

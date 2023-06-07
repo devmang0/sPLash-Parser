@@ -43,7 +43,7 @@ program: statement*
 
 ?definition: "main:Void" func_args block  -> main
            | _binder [refinement] func_args block -> func_def
-           | _binder "=" expression ";" -> var_def 
+           | _binder "=" expression ";" -> var_def
 
 ?set_val: var "=" expression ";"
         | index_access "=" expression ";"
@@ -84,14 +84,15 @@ _binder: NAME":"type_
      | var
      | STRING
      | index_access
+     | array_def
      | "("expression")" // Parenthesized expression are part of this language?
 
-index_access: [NAME|func_call|index_access] "["expression"]"
+index_access: [NAME|func_call|index_access|array_def] "["expression"]"
 
 ?type_: TYPE
       | "["type_"]" -> array
 
-
+array_def: "{" expression ["," expression]*"}"
 
 
 // Special declarations of terminals not in common.lark

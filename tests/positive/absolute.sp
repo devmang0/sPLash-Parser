@@ -24,9 +24,14 @@ f_abs:Double ( a:Double ){
 main:Void(){
 
     print( "c:Double = %f\n", c );
-    print( absOf, a, abs(a));
-    print( absOf, b, abs(b));
-    print( "abs of %f = %f\n", c, f_abs(c));
+
+    abs_a:Int = abs(a);
+    abs_b:Int = abs(b);
+    abs_c:Double = f_abs(c);
+
+    print( absOf, a, abs_a);
+    print( absOf, b, abs_b);
+    print( "abs of %f = %f\n", c, abs_c);
 
 } 
 

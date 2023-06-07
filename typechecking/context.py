@@ -1,5 +1,6 @@
+from typing import List, Dict
 from dataclasses import dataclass
-from splash_ast import (
+from core.splash_ast import (
     t_void,
     t_bool,
     t_string,
@@ -23,7 +24,7 @@ class Context():
 
     """
 
-    stack = None
+    stack = List[Dict]
 
     def __init__(self):
         self.stack = [{}]
@@ -33,7 +34,7 @@ class Context():
         for scope in self.stack.__reversed__():
             if name in scope:
                 return scope[name]
-        raise ContextException(f"Identifier {name} not in context")
+        raise ContextException(f"Identifier '{name}' not in context")
     
 
 

@@ -1,6 +1,6 @@
 
 # from typechecking import Context
-from splash_ast import *
+from core.splash_ast import *
 
 
 def transformRefinement(op, type_, refinement = None):

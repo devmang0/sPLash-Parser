@@ -1,5 +1,3 @@
 x:Bool = (False) && (True || False);
 
-xs:[Int];
-
-i:Int = xs[0];
+xs:Int = (156*54) * (0*(456) + 169-(13*13));

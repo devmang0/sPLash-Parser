@@ -3,19 +3,20 @@ from lark.tree import Meta
 
 from typechecking.context import Context
 
-from splash_ast import jsonAST
-from splash_ast import Expression
-from splash_ast import _Ty
+from core.splash_ast import jsonAST
+from core.splash_ast import Expression
+from core.splash_ast import _Ty
 
 from typechecking.liquid import liquid_type_check
 
-from splash_ast import ( # AST Nodes
+from core.splash_ast import ( # AST Nodes
 
     Program,
     FuncDec, FuncDef, FuncArgs, FuncCall,
     VarDec, VarDef, Variable,
     IfThenElse,
     Comparison,
+    ArrayDef,
 
     SetVal, 
     While,
@@ -36,9 +37,9 @@ from splash_ast import ( # AST Nodes
 
 
 
-from splash_ast import ( # Types and Statics
+from core.splash_ast import ( # Types and Statics
     
-    BasicType,
+    BasicType,  
     Array,
 
     t_int,
@@ -98,7 +99,7 @@ def is_subtype(ctx:Context, this, that ):
     return sc and ref_check
 
 
-def infer_type(ctx: Context, expr: Expression) -> _Ty:
+def infer_type(ctx: Context, expr: Expression, target_type:_Ty = None) -> _Ty:
 
     # print("INFERING:", expr)
     if isinstance(expr, Neg) or isinstance(expr, Not):
@@ -141,14 +142,15 @@ def infer_type(ctx: Context, expr: Expression) -> _Ty:
     elif isinstance(expr, IndexAccess):
 
         indexed_exp_type = infer_type(ctx, expr.indexed)
-        if not isinstance(indexed_exp_type, Array):
-            raise TypeCheckingError("Expression not indexable")
+        if not isinstance(indexed_exp_type, (Array, ArrayDef)):
+            raise TypeCheckingError(f"Expression of type {indexed_exp_type} is not indexable")
 
         indexing_type = infer_type(ctx, expr.index)
         if not (t_int == indexing_type):
             raise TypeCheckingError(
                 Errors.Unexpected.value.format("Type", t_int, indexing_type))
 
+        expr.final_ty = indexed_exp_type.innerType
         return indexed_exp_type.innerType
 
     # elif isinstance(expr, Literal):
@@ -170,6 +172,17 @@ def infer_type(ctx: Context, expr: Expression) -> _Ty:
     
     elif isinstance(expr, Literal):
         return expr.type_
+    
+    elif isinstance(expr, ArrayDef):
+        acc_type = infer_type(ctx, expr.elems[0])
+        for i, el in enumerate(expr.elems[1:]):
+            tmp = infer_type(ctx, el)
+            if not acc_type == tmp: # != not defined, sorry
+                raise TypeCheckingError(message=Errors.Unexpected.value.format("Array Element", acc_type, tmp) ,meta=expr.meta)
+        expr.final_type = acc_type
+        return Array(expr.final_type)
+        
+
     else:
         print(f"Can't infer type of expression {expr}")
         return None
@@ -198,8 +211,6 @@ def verify(ctx: Context, node):
 
         ctx.set_type(RETURN, node.type_)
         for param in node.params.args:
-            # print(f"Function Arg: {json.dumps(param, indent=2, cls=jsonAST)}")
-            # print(f"Arg refinement: {param.refinement}")
             ctx.set_type(param.name, param.type_)
         ctx.enter_scope()
         for st in node.block.statements:
@@ -265,14 +276,13 @@ def verify(ctx: Context, node):
     elif isinstance(node, Return):
 
         expected = ctx.get_type(RETURN)
-        expr_type = None
-        if node.value != None:
-            expr_type = infer_type(ctx, node.value)
-        else:
-            expr_type = t_void
+        expr_type = infer_type(ctx, node.value) if node.value != None else t_void
+
         if not is_subtype(ctx, expr_type, expected):
             raise TypeCheckingError(
                 f"Invalid Return Type: Expected {expected[0].__class__.__name__} but got {expr_type[0].__class__.__name__}", meta=node.meta)
+
+        return RETURN
 
     elif isinstance(node, VarDec):
 
@@ -283,15 +293,12 @@ def verify(ctx: Context, node):
 
     elif isinstance(node, SetVal):
 
-        name = None
-        expected = None
-        expected = infer_type(ctx, node.varToSet)
-
-        if ctx.has_var(name):
-
-            actual = verify(ctx, node.value)
-            if not is_subtype(ctx, actual, expected):
-                raise TypeCheckingError(Errors.Unexpected.value.format("Type", expected, actual))
+        expected = verify(ctx, node.varToSet)
+        actual = verify(ctx, node.value)
+    
+        if not is_subtype(ctx, actual, expected):
+            raise TypeCheckingError(Errors.Unexpected.value.format("Type", expected, actual))
+    
 
     elif isinstance(node, FuncCall):
 
@@ -332,7 +339,8 @@ def verify(ctx: Context, node):
             verify(ctx, stmt)
         ctx.exit_scope()
 
-    elif isinstance(node, (Literal, IndexAccess, Add, Sub, Mul, Div, Mod, And, Or)):
+        
+    elif isinstance(node, (Literal, IndexAccess, Add, Sub, Mul, Div, Mod, And, Or, ArrayDef)):
         return infer_type(ctx, node)
 
     elif isinstance(node, BasicType):

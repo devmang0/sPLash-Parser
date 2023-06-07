@@ -8,6 +8,7 @@ class Emitter():
         self.type_tracker = {}
         self.top = -1
 
+        self.intrinsic_decls: dict[str, list[str]] = {}
         self.ctx = [{}]
 
     def get_count(self):
@@ -25,16 +26,19 @@ class Emitter():
         self.top +=1
         self.lines.insert(self.top, v)
 
+    def __gt__(self, v):
+        self.bot.append(v)
+
     def get_code(self):
-        return "\n".join(self.lines)        
+        return "\n".join(self.lines+list(self.intrinsic_decls.values()))        
     
     def enter_scope(self):
-        print(f"===[SCOPE-{len(self.ctx)}]===")
+        # print(f"===[SCOPE-{len(self.ctx)}]===")
         self.ctx.append({})
     
     def exit_scope(self):
         self.ctx.pop()
-        print(f"===[END-SCOPE-{len(self.ctx)}]===")
+        # print(f"===[END-SCOPE-{len(self.ctx)}]===")
 
     def set_var(self, name, ir_name):
         if name in self.ctx[-1]:
@@ -63,3 +67,6 @@ class Emitter():
     def get_const(self, const):
         return self.consts.get(const, None)
     
+    def include_decl(self, base_name, decl):
+        self.intrinsic_decls[base_name] = decl
+
