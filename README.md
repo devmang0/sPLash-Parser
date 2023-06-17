@@ -14,7 +14,6 @@ I have left a script that will install dependencies, python and the venv package
 bash setup.sh
 ```
 
-
 ## Running the parser
 
 After the inital setup, we don't need to run it ever again, just need to activate the venv before using it, which we do so by using:

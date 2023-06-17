@@ -11,7 +11,6 @@ program: statement*
 
 
 ?expression: or_test
-        //    | func_call
 
 ?or_test: and_test 
         | or_test "||" and_test -> or
@@ -48,11 +47,6 @@ program: statement*
 ?set_val: var "=" expression ";"
         | index_access "=" expression ";"
 
-
-
-// ?test: comparison
-//      | var
-//      | comparison LOG_OP test
 
 func_call: NAME"("(expression (("," expression )*)?)?")"
 
@@ -107,12 +101,7 @@ DOUBLE: DIGIT*"."DIGIT+
 
 TYPE: "Int" | "Double" | "Bool" | "String" | "Void"
 
-// TRUE: "true" 
-// FALSE: "false"
 
-
-// NAME (alias for common.CNAME) describes our variable format  
-// INDEX_ACCESS: NAME"["INT"]" 
 
 //  MISC
 COMMENT: "(*" /(.|\n)*?/ "*)" // Match any comments multiline

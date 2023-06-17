@@ -17,6 +17,7 @@ from core.splash_ast import ( # AST Nodes
     IfThenElse,
     Comparison,
     ArrayDef,
+    Block, 
 
     SetVal, 
     While,
@@ -216,6 +217,9 @@ def verify(ctx: Context, node):
         for st in node.block.statements:
             verify(ctx, st)
         ctx.exit_scope()
+
+        find_func_return(node)
+        
         ctx.exit_scope()
 
     elif isinstance(node, IfThenElse):
@@ -280,7 +284,7 @@ def verify(ctx: Context, node):
 
         if not is_subtype(ctx, expr_type, expected):
             raise TypeCheckingError(
-                f"Invalid Return Type: Expected {expected[0].__class__.__name__} but got {expr_type[0].__class__.__name__}", meta=node.meta)
+                f"Invalid Return Type: Expected {expected} but got {expr_type}", meta=node.meta)
 
         return RETURN
 
@@ -348,3 +352,57 @@ def verify(ctx: Context, node):
     
     else:
         print(f"Don't know how to handle {node.__class__.__name__}:{node}")
+
+
+
+def find_func_return(func_def:FuncDef):
+    """
+        Nodes that can have nested nodes, are primarily Blocks, but since blocks can't exist on their own:
+
+        FuncDef
+        IfThenElse x2
+        While
+
+        Mainly used to verify whether or not a function actually returns. Previously, if a function declared as type X returned type Y, that error would be flagged, but if the function never actually returned, it would not be flagged as an error.
+    """
+    return _find_ret_aux(func_def.block.statements, func_def.type_==t_void, func_meta=func_def.meta)
+
+
+def _find_ret_aux(node_list, is_void, ind=0, func_meta=None):
+
+    for i, st in enumerate(node_list):
+        if isinstance(st, Return):
+            return True
+        if isinstance(st, IfThenElse):
+            if is_void: # If the function is void, we don't care if it returns
+                return True
+
+            check_else_br = [] if st.else_do == None else st.else_do.statements 
+
+            main_br_returns = _find_ret_aux(node_list[i+1:], is_void, func_meta=func_meta)
+            then_br_returns = _find_ret_aux(st.then_do.statements, is_void, ind+1, func_meta=func_meta)
+            else_br_returns = _find_ret_aux(check_else_br, is_void, ind+1, func_meta=func_meta)
+
+            if main_br_returns: 
+                return True
+            else: # Main does not return
+                if then_br_returns and else_br_returns:
+                    return True
+                else:
+                    raise TypeCheckingError(f"Non-Void functions must always return a value", meta=func_meta) 
+    
+
+        if isinstance(st, While):
+            while_br_returns = _find_ret_aux( st.block.statements, is_void, ind+1, func_meta=func_meta)
+            main_br_returns = _find_ret_aux( node_list[i+1:], is_void, func_meta=func_meta)
+
+
+            # I know this could be condensed into one statement, although I find
+            # easier to read this way. Also space for other cases might be added as warnings
+            # explaining why returning inside a while and not outside might bring problems
+            if is_void and not while_br_returns and not main_br_returns:
+                return True
+            elif while_br_returns and main_br_returns:
+                return True
+            else:
+                return False

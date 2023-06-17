@@ -4,8 +4,9 @@
 
     _asdasd:Int;
 
-
 *)
 main:Void(){
-    print("Hello World");
+
+    print("Hello World\n");
+
 }

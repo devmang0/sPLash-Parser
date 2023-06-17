@@ -13,8 +13,10 @@ from core.splash_ast import *
 from typechecking.context import Context, load_native_functions
 from typechecking.typecheck import verify
 
-from compile import compiler
+from codegen.compile import compiler
 
+from optimizer.optimizer import Optimizer
+from optimizer.tree_based_opt import TreeBasedOptimizer, pass_, rebuild_ast
 
 this_module = sys.modules[__name__]
 
@@ -27,6 +29,7 @@ argparser.add_argument("--tree", help="AST as json", action="store_true")
 argparser.add_argument("--typecheck", help="Typecheck the program", action="store_true")
 
 argparser.add_argument("--llvm", help="outputs llvm file", action="store_true")
+argparser.add_argument("--optimize", help="optimize", action="store_true")
 
 argparser.add_argument("files", help="file(s) to parse", nargs='*', default= './positive/hello-world.sp')
 argsp = argparser.parse_args()
@@ -59,8 +62,6 @@ def test(to_parse: str, currFile:str="example.sp") -> bool:
 
     prsd = parse(to_parse)
     ast = trasformer.transform(prsd)
-    if argsp.tree:
-        print(json.dumps(ast, indent=4 , cls=jsonAST))
     if argsp.rawast:
         ast = trasformer.transform(prsd)
         print(ast)
@@ -75,12 +76,20 @@ def test(to_parse: str, currFile:str="example.sp") -> bool:
         load_native_functions(ctx)
         verify(ctx, ast)
         # print("typechecks")
-    
+
+    if argsp.optimize:
+        tbo = TreeBasedOptimizer()
+        pass_(tbo, ast, 3)
+        ast = rebuild_ast(tbo, ast)
+
+    if argsp.tree:
+        print(json.dumps(ast, indent=4 , cls=jsonAST))
+
     if argsp.llvm:
         code_gen = compiler(ast)
         print(code_gen)
         ll_name = currFile.replace(".sp", ".ll")
-        with open(file="code-gen/"+ll_name, mode="w+") as f:
+        with open(file="out/"+ll_name, mode="w+") as f:
             f.write(code_gen)
     
         

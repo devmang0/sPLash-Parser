@@ -182,8 +182,8 @@ class FuncCall(Expression, ast_utils.WithMeta):
 
 
 @dataclass
-class FuncDef(_Statement):
-
+class FuncDef(_Statement, ast_utils.WithMeta):
+    meta: Meta
     name: str = ""
     type_: str  = "Void"
     refinement: Refinement = None
@@ -310,13 +310,15 @@ class Or(_Statement, ast_utils.WithMeta):
 
 
 @dataclass
-class IfThenElse(_Statement):
+class IfThenElse(_Statement, ast_utils.WithMeta):
+    meta: Meta
     test: Test
     then_do: Block
     else_do: Block = None
 
 @dataclass
-class While(_Statement):
+class While(_Statement, ast_utils.WithMeta):
+    meta: Meta
     condition: Test
     block: Block
 

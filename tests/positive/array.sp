@@ -10,13 +10,16 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
 
     i:Int = 0;
     sum:Int = 0;
-
+    before:Int = 0;
     
+    xs[3] = 0;
+
     max:Int = len(xs);
     while i < max {
 
-        print("#%d -> el: %d => curr sum: %d\n", i, xs[i], sum);
+        before = sum;
         sum = sum + xs[i];
+        print("#%d -> el: %d + %d = %d\n", i, xs[i], before, sum);
 
         i = i + 1;
     }
@@ -28,6 +31,7 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
 
 
 main:Void(){
-    sum_:Int = sum({1, 2, 3});
-    print("SUM: %d\n", sum_);
+    xss:[Int] = {1, 2, 3, 4, 5};
+    s:Int = sum(xss);
+    print("SUM: %d\n", s);
 }

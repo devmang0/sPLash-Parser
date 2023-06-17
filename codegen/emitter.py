@@ -8,6 +8,8 @@ class Emitter():
         self.type_tracker = {}
         self.top = -1
 
+
+        self.string_pool = {}
         self.intrinsic_decls: dict[str, list[str]] = {}
         self.ctx = [{}]
 
@@ -42,14 +44,14 @@ class Emitter():
 
     def set_var(self, name, ir_name):
         if name in self.ctx[-1]:
-            raise ValueError("Variable already in current context")
+            raise ValueError(f"Variable '{name}' already in current context")
         self.ctx[-1][name] = ir_name
 
     def get_var(self, name):
         for scp in self.ctx.__reversed__():
             if name in scp:
                 return scp[name]
-        raise ValueError("Variable not in context")
+        raise ValueError(f"Variable '{name}' not in context")
 
     
     def get_pointer_name(self, n):
@@ -70,3 +72,9 @@ class Emitter():
     def include_decl(self, base_name, decl):
         self.intrinsic_decls[base_name] = decl
 
+    def get_string_ref(self, string:str, if_new_symbol:str):
+        if string in self.string_pool: 
+            return False, self.string_pool.get(string)
+        else:
+            self.string_pool[string] = if_new_symbol
+            return True, if_new_symbol

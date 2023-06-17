@@ -28,6 +28,8 @@ main:Void(){
     abs_a:Int = abs(a);
     abs_b:Int = abs(b);
     abs_c:Double = f_abs(c);
+    abs_c = 0.0;
+    abs_c = f_abs(abs_c) ;
 
     print( absOf, a, abs_a);
     print( absOf, b, abs_b);
