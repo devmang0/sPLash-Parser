@@ -133,6 +133,15 @@ def constant_folding(node:Expression, emt:Emitter):
         const = emt.get_const(node.name)
         return const, const!=None
     
+    elif isinstance(node, (And, Or)):
+        l_is_const, l_val = constant_folding(node.l_expr, emt)
+        r_is_const, r_val = constant_folding(node.r_expr, emt)
+
+        if l_is_const and r_is_const:
+            return True, eval(f"({str(l_val)} {(node.__class__.__name__.lower())} {str(r_val)})")
+        else:
+            return False, None
+
     else:
         return "", False
 
@@ -156,7 +165,6 @@ def compiler(node, emt:Emitter=None, i=0):
         remaining: list = []
 
         for stmt in node.statements:
-            # print("COMPILING: ", stmt, "\n\n")
             if isinstance(stmt, (VarDec, FuncDec)):
                 compiler(stmt, emt, i)
             elif isinstance(stmt, VarDef):
@@ -174,9 +182,7 @@ def compiler(node, emt:Emitter=None, i=0):
 
     elif isinstance(node, FuncDec):
         
-        tmp = f"".join([arg for arg in node.params])
-        print("FOR FUNCTION:", node.name ," -> ", tmp)
-        
+        tmp = f"".join([arg for arg in node.params])        
         emt < f"declare {f_ty} @{node.name}()"
 
 
@@ -219,7 +225,6 @@ def compiler(node, emt:Emitter=None, i=0):
     elif isinstance(node, VarDef):
 
         if i == 0: # Global var
-            # print("VARDEF: ", node)
             reg = f"@{node.name}"
             emt.set_var(node.name, (reg, "ptr"))
             
@@ -240,7 +245,6 @@ def compiler(node, emt:Emitter=None, i=0):
                             return
                     ty = to_llir_type(node.type_)
 
-                    # print("INVOKED: ", node.value)
                     val, _ = compiler(node.value, emt, i)
                     emt < f"{reg} = dso_local global {ty} {val}, align 8"
                     return
@@ -257,7 +261,16 @@ def compiler(node, emt:Emitter=None, i=0):
                         emt < f'{const_name} = private unnamed_addr constant [{str_size} x i8] c{parse_nl}, align 1'
 
                 emt < f"{reg} = global ptr {const_name}, align 8"
-            
+            elif node.type_ == t_bool:
+
+                const_name = f"@{node.name}"
+                const, is_const = constant_folding(node.value, emt)
+                ty = to_llir_type(node.type_)
+
+                emt.set_const(node.name, const)
+                emt < f"{reg} = dso_local global {ty} {str(const).lower()}, align 8"
+
+
             else:
                 const_name = f"@.{node.type_.get_name()}.{emt.get_id()}"
                 e1, t1 = compiler(node.value, emt, i+1)
@@ -270,7 +283,6 @@ def compiler(node, emt:Emitter=None, i=0):
             reg = emt.get_pointer_name(node.name)
             p_ty = to_llir_type(node.type_) 
 
-            # print(f"[{i}]VAL_TO_SET:", node.value)
             val, v_ty = compiler(node.value, emt, i+1)
 
             # return the pointer if its an array
@@ -302,11 +314,15 @@ def compiler(node, emt:Emitter=None, i=0):
 
     elif isinstance(node, Literal):
 
+        if node.type_ == t_bool:
+            return (str(node.val).lower(), to_llir_type(node.type_))
 
         if node.type_ == t_string:
             reg = f"@.str.{emt.get_count()}"
             
             new, reg = emt.get_string_ref(node.val, reg)
+            if not new: 
+                return (reg, "ptr")
 
             str_size = (len(node.val[1:-1]) -
                         len(findall(r'\\.', node.val)))+1
@@ -375,6 +391,8 @@ def compiler(node, emt:Emitter=None, i=0):
         emt.enter_scope()
         for st in node.then_do.statements:
             compiler(st, emt, i+1)
+            
+        emt << f"br label %{lbl_end}"
         emt.exit_scope()
 
         if node.else_do != None:
@@ -383,6 +401,7 @@ def compiler(node, emt:Emitter=None, i=0):
             emt.enter_scope()
             for st in node.else_do.statements:
                 compiler(st, emt, i)
+            emt << f"br label %{lbl_end}"
             emt.exit_scope()
 
         emt << f"{lbl_end}:"
@@ -394,8 +413,7 @@ def compiler(node, emt:Emitter=None, i=0):
         lex, l_ty = compiler(node.l_expr, emt, i)
         rex, r_ty = compiler(node.r_expr, emt, i)
 
-        lex = load_ptr(emt, lex, l_ty, i) if not isinstance(
-            lex, (int, float)) and lex.startswith("%ptr") else lex
+        lex = load_ptr(emt, lex, l_ty, i) if not isinstance(lex, (int, float)) and lex.startswith("%ptr") else lex
         rex = load_ptr(emt, rex, r_ty, i) if not isinstance(rex, (int, float)) and rex.startswith("%ptr") else rex
 
         # Since fcmp only works for floats and icmp only for ints, we must do some work
@@ -478,7 +496,13 @@ def compiler(node, emt:Emitter=None, i=0):
         lex, lt = compiler(node.l_expr, emt, i)
         rex, rt = compiler(node.r_expr, emt, i)
 
-        emt << f"{reg} = {op} i1 {lex} {rex}"
+        if lex.startswith("@"):
+            lex = load_ptr(emt, lex, lt, i)
+
+        if rex.startswith("@"):
+            rex = load_ptr(emt, rex, rt, i)
+
+        emt << f"{reg} = {op} i1 {lex}, {rex}"
 
         return reg, "i1"
 
@@ -497,7 +521,7 @@ def compiler(node, emt:Emitter=None, i=0):
     elif isinstance(node, Not):
 
         var, var_ty = compiler(node.expr, emt, i)
-        reg = emt.get_count()
+        reg = f"%{emt.get_id()}"
         emt << indent(i)+f"{reg} = xor i1 {var}, true"
         return reg, "i1"
 
@@ -524,10 +548,6 @@ def compiler(node, emt:Emitter=None, i=0):
                         else compiler(node.indexed, emt, i)
 
         index, index_ty = compiler(node.index, emt, i)
-
-        # print(f"[{node.indexed}]Indexed: {indexed} {indexed_ty}")
-        print(f"[{node.indexed}]Index: {index} {index_ty}")
-
 
         if not isinstance(index, int) and index.startswith("%ptr"):
             ptr_tmp = "%"+emt.get_id()
@@ -568,9 +588,7 @@ def compiler(node, emt:Emitter=None, i=0):
     elif isinstance(node, SetVal):
         
         var, var_ty = compiler(node.varToSet, emt, i)
-
         val, val_ty = compiler(node.value, emt, i)
-        print(f"[{node.value}] => {val}:{val_ty}")
 
         if isinstance(val, str) and val.startswith("%ptr"):
             val = load_ptr(emt, val, val_ty, i)

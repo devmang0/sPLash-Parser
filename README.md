@@ -6,6 +6,26 @@ There are some instructions we need to run in order to ensure the correct functi
 
 If you have python installed, as well as virtual-env feel free to skip the setup steps
 
+## LLVM Output and Optimization Process
+
+To tell the compiler to make optimizations, pleas use the `--optimize` flag
+To tell the compiler to output the llvm-ir code, please use the `--llvm` flag
+To tell the compiler to print the AST, use the `--tree` flag
+
+## Running LLIR Code
+
+> NOTE: This project was made using the most recent version 17 of LLVM Pipeline
+> For installation reference: <https://apt.llvm.org>
+
+To run the generated code, please we have to first compile using `llc` and then transform the `.s` file into an executable file using `clang`, for example:
+
+```bash
+llc hello-world.ll
+clang hello-world.s -o hello-world
+# afterwards we can run it as an executable
+./hello-world
+```
+
 ## Setup
 
 I have left a script that will install dependencies, python and the venv package (to avoid global installation). To run the script just use:

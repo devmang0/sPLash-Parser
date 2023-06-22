@@ -12,8 +12,6 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
     sum:Int = 0;
     before:Int = 0;
     
-    xs[3] = 0;
-
     max:Int = len(xs);
     while i < max {
 
@@ -25,9 +23,8 @@ sum:Int ( xs:[Int] where len(xs) > 0 ){
     }
 
     return sum;
-
 }
-(* print(sum(xs)) *)
+
 
 
 main:Void(){

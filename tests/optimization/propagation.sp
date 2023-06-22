@@ -1,6 +1,3 @@
-
-
-
 main:Void(){
 
     a:Int = 0;

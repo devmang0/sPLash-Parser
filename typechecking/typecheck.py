@@ -7,7 +7,7 @@ from core.splash_ast import jsonAST
 from core.splash_ast import Expression
 from core.splash_ast import _Ty
 
-from typechecking.liquid import liquid_type_check
+# from typechecking.liquid import liquid_type_check
 
 from core.splash_ast import ( # AST Nodes
 
@@ -83,26 +83,17 @@ class TypeCheckingError(Exception):
 
 def is_subtype(ctx:Context, this, that ):
 
-
-    # print("\nis subtype was changed to accommodate liquid types\n")
-
-    # print("This class:", this[0].__class__)
-    # print("That class:", that[0].__class__)
-
     if isinstance(this, Array) and isinstance(that, Array):
         return is_subtype(ctx, this.innerType, that.innerType)
     
     sc: bool = this == that
-    # print(f"{this} == {that}?: {this == that}")
     if not sc:
         return False
-    ref_check = liquid_type_check(ctx, this, that)
-    return sc and ref_check
+    return sc 
 
 
-def infer_type(ctx: Context, expr: Expression, target_type:_Ty = None) -> _Ty:
+def infer_type(ctx: Context, expr: Expression) -> _Ty:
 
-    # print("INFERING:", expr)
     if isinstance(expr, Neg) or isinstance(expr, Not):
         return infer_type(ctx, expr.expr)
 
@@ -154,9 +145,6 @@ def infer_type(ctx: Context, expr: Expression, target_type:_Ty = None) -> _Ty:
         expr.final_ty = indexed_exp_type.innerType
         return indexed_exp_type.innerType
 
-    # elif isinstance(expr, Literal):
-    #     return (expr.type_, None)
-
     elif isinstance(expr, Var):
         var_ty = ctx.get_type(expr.name)
         expr.type_ = var_ty
@@ -183,6 +171,18 @@ def infer_type(ctx: Context, expr: Expression, target_type:_Ty = None) -> _Ty:
         expr.final_type = acc_type
         return Array(expr.final_type)
         
+
+    elif isinstance(expr, Comparison):
+
+        lex, rex = (verify(ctx, expr.l_expr), verify(ctx, expr.r_expr))
+
+        if not (lex == rex):
+            raise TypeCheckingError(
+                f"Operands ({expr.l_expr}) and ({expr.r_expr}) are not comparable")
+        
+        expr.types = (lex, rex)
+
+        return t_bool
 
     else:
         print(f"Can't infer type of expression {expr}")
@@ -236,19 +236,6 @@ def verify(ctx: Context, node):
             for st in node.else_do.statements:
                 verify(ctx, st)
             ctx.exit_scope()
-
-    elif isinstance(node, Comparison):
-        # print( verify(ctx, node.l_expr), 
-        #        verify(ctx, node.r_expr), 
-        #        infer_type(ctx, node.l_expr), 
-        #        infer_type(ctx, node.r_expr)
-        #      )
-
-        if not (verify(ctx, node.l_expr) == verify(ctx, node.r_expr)):
-            raise TypeCheckingError(
-                f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
-        node.types = (verify(ctx, node.l_expr), verify(ctx, node.r_expr))
-        return t_bool
 
     elif isinstance(node, Var):
         if not ctx.has_var(node.name):
@@ -307,15 +294,12 @@ def verify(ctx: Context, node):
     elif isinstance(node, FuncCall):
 
         if ctx.has_var(node.called):  # If function is defined
-            # print("Found", node.called, "in context")
+
             func_type, *args = ctx.get_type(node.called)
-            # print(args)
             ver_arg = [ verify(ctx, arg) for arg in node.args ]
             node.args_tys = ver_arg
 
             if node.called == "print":
-                # print(f"[{node.called}]VER_ARGS:", ver_arg)
-                # print(f"[{node.called}]ARGS:", node.args)
                 return func_type
 
             if len(args) != len(node.args):
@@ -342,6 +326,14 @@ def verify(ctx: Context, node):
         for stmt in node.block.statements:
             verify(ctx, stmt)
         ctx.exit_scope()
+
+    elif isinstance(node, Comparison):
+    
+        if not (verify(ctx, node.l_expr) == verify(ctx, node.r_expr)):
+            raise TypeCheckingError(
+                f"Operands ({node.l_expr}) and ({node.r_expr}) are not comparable")
+        node.types = (verify(ctx, node.l_expr), verify(ctx, node.r_expr))
+        return t_bool
 
         
     elif isinstance(node, (Literal, IndexAccess, Add, Sub, Mul, Div, Mod, And, Or, ArrayDef)):

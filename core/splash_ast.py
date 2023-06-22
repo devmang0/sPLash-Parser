@@ -102,7 +102,7 @@ class Variable(_Node):
 
 
 @dataclass
-class Comparison(_Node):
+class Comparison(Test):
     l_expr : Expression
     op: str
     r_expr : Expression
